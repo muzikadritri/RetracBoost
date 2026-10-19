@@ -1,9 +1,12 @@
-Update-Knopf: richtiges Repo
-- Der Update-Knopf und der Link „Releases“ zeigen wieder auf github.com/muzikadritri/RetracBoost. Bei manchen stand dort ein Repo, das es nicht gibt, deshalb hat die Update-Suche nichts gefunden.
-- Das Repo ist jetzt fest in der App eingebaut und lässt sich nicht mehr verstellen. Ein alter, falscher Eintrag wird beim Start entfernt.
+Neuer Tab „Games“
+- Minecraft, Counter-Strike 2, GTA V, Fortnite, VALORANT, Apex Legends, Rocket League und PUBG mit dem offiziellen Bild des Spiels.
+- Pro Spiel einzelne Schalter: CPU-Priorität, Grafikkarte auf hohe Leistung, Vollbildoptimierung aus und Werte in der Konfigurationsdatei wie VSync aus. Ausschalten stellt die alten Werte wieder her.
+- Das laufende Spiel wird nicht angefasst, Konfigurationsdateien werden nur geändert, wenn das Spiel zu ist.
+- Weitere Spiele lassen sich als Plugin (ZIP) hinzufügen. Vor der Installation siehst du, was das Plugin ändert.
 
-Update button: correct repo
-- The update button and the "Releases" link point to github.com/muzikadritri/RetracBoost again. The repo is now built in and can't be changed by an old setting.
+New "Games" tab
+- Eight games with their official artwork and per-game switches (CPU priority, high-performance GPU, fullscreen optimisations, config values like VSync). Turning a switch off restores the old values.
+- More games can be added as ZIP plugins. You see every change before installing.
 
 Wichtig für v1.0.1 und v1.0.2
 - In diesen Versionen funktioniert der Update-Knopf noch nicht. Einmal RetracBoost-Setup.exe von dieser Seite installieren, danach klappt er.
