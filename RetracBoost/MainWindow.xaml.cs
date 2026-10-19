@@ -234,6 +234,7 @@ namespace RetracBoost
             TabRetrac.Content = "Retrac";
             LocalizeTools();
             LocalizeRetrac();
+            InitGames();
 
             TargetList.ItemsSource = Presets;
             if (!Admin.IsElevated)
@@ -286,37 +287,23 @@ namespace RetracBoost
 
         public void SelectTab(int index)
         {
-            (index == 1 ? TabTools : index == 2 ? TabRetrac : TabBoost).IsChecked = true;
+            (index == 1 ? TabTools : index == 2 ? TabRetrac : index == 3 ? TabGames : TabBoost).IsChecked = true;
         }
 
         void Tab_Checked(object sender, RoutedEventArgs e)
         {
-            if (PageBoost == null || PageTools == null || PageRetrac == null) return; // beim Laden
+            if (PageBoost == null || PageTools == null || PageGames == null || PageRetrac == null) return; // beim Laden
 
-            FrameworkElement targetPage = null;
-            TranslateTransform targetTrans = null;
+            var tabs = new[] { TabBoost, TabTools, TabGames, TabRetrac };
+            var pages = new FrameworkElement[] { PageBoost, PageTools, PageGames, PageRetrac };
+            var transforms = new[] { PageBoostTrans, PageToolsTrans, PageGamesTrans, PageRetracTrans };
+            int index = Array.FindIndex(tabs, t => t.IsChecked == true);
+            if (index < 0) return;
+            for (int i = 0; i < pages.Length; i++)
+                if (i != index) pages[i].Visibility = Visibility.Collapsed;
 
-            if (TabBoost.IsChecked == true)
-            {
-                targetPage = PageBoost;
-                targetTrans = PageBoostTrans;
-                PageTools.Visibility = Visibility.Collapsed;
-                PageRetrac.Visibility = Visibility.Collapsed;
-            }
-            else if (TabTools.IsChecked == true)
-            {
-                targetPage = PageTools;
-                targetTrans = PageToolsTrans;
-                PageBoost.Visibility = Visibility.Collapsed;
-                PageRetrac.Visibility = Visibility.Collapsed;
-            }
-            else if (TabRetrac.IsChecked == true)
-            {
-                targetPage = PageRetrac;
-                targetTrans = PageRetracTrans;
-                PageBoost.Visibility = Visibility.Collapsed;
-                PageTools.Visibility = Visibility.Collapsed;
-            }
+            FrameworkElement targetPage = pages[index];
+            TranslateTransform targetTrans = transforms[index];
 
             if (targetPage != null)
             {

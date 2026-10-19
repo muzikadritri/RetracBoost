@@ -584,6 +584,73 @@
                 <TextBlock Grid.Column="3" Text="{Binding Extra}" HorizontalAlignment="Right" Foreground="{StaticResource Muted}"/>
             </Grid>
         </DataTemplate>
+        <!-- Games-Tab: Karte eines Spiels -->
+        <DataTemplate x:Key="GameCardTemplate">
+            <Border x:Name="CardBd" Margin="8" CornerRadius="14" Background="#121722" BorderBrush="#242C3F" BorderThickness="1"
+                    Cursor="Hand" MouseLeftButtonUp="GameCard_Click">
+                <Border.Effect>
+                    <DropShadowEffect Color="#000000" BlurRadius="16" ShadowDepth="3" Direction="270" Opacity="0.35"/>
+                </Border.Effect>
+                <StackPanel>
+                    <Grid Height="100">
+                        <Border CornerRadius="13,13,0,0">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#1B2436" Offset="0"/>
+                                    <GradientStop Color="#0E1320" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <TextBlock Text="{Binding Initials}" FontSize="30" FontWeight="Light" Foreground="#4A5874"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border CornerRadius="13,13,0,0">
+                            <Border.Background>
+                                <ImageBrush ImageSource="{Binding Image}" Stretch="UniformToFill"/>
+                            </Border.Background>
+                        </Border>
+                        <Border Visibility="{Binding PluginVisibility}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8"
+                                CornerRadius="6" Background="#D90B0D12" Padding="7,2">
+                            <TextBlock Text="Plugin" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Accent}"/>
+                        </Border>
+                    </Grid>
+                    <StackPanel Margin="12,9,12,11">
+                        <TextBlock Text="{Binding Name}" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource Text}" TextTrimming="CharacterEllipsis"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                            <Ellipse Width="6" Height="6" Fill="{Binding StatusBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="{Binding Status}" FontSize="11.5" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+            <DataTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="CardBd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                </Trigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- Games-Tab: Startoption zum Kopieren -->
+        <DataTemplate x:Key="LaunchItemTemplate">
+            <Border BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1" Padding="10,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,14,0">
+                        <TextBlock Text="{Binding Title}" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                        <TextBlock Text="{Binding Summary}" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                        <Border Background="#0D111A" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="6"
+                                Padding="8,4" Margin="0,8,0,0" HorizontalAlignment="Left">
+                            <TextBlock Text="{Binding Value}" FontFamily="Cascadia Mono, Consolas" FontSize="12" Foreground="{StaticResource Text}"/>
+                        </Border>
+                        <TextBlock Text="{Binding Hint}" FontSize="11.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Style="{StaticResource Ghost}" Content="{Binding CopyText}" Tag="{Binding Value}"
+                            Click="CopyLaunch_Click" VerticalAlignment="Top"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
     </Window.Resources>
 
     <Grid Background="#0A0D14">
@@ -660,6 +727,7 @@
                     <StackPanel Orientation="Horizontal">
                         <RadioButton x:Name="TabBoost" Style="{StaticResource ModernTab}" GroupName="tabs" IsChecked="True" Checked="Tab_Checked"/>
                         <RadioButton x:Name="TabTools" Style="{StaticResource ModernTab}" GroupName="tabs" Checked="Tab_Checked"/>
+                        <RadioButton x:Name="TabGames" Style="{StaticResource ModernTab}" GroupName="tabs" Checked="Tab_Checked"/>
                         <RadioButton x:Name="TabRetrac" Style="{StaticResource ModernTab}" GroupName="tabs" Checked="Tab_Checked"/>
                     </StackPanel>
                 </Border>
@@ -892,6 +960,118 @@
                 </Border>
             </Grid>
         </ScrollViewer>
+
+        <!-- ================= Seite: Games ================= -->
+        <Grid x:Name="PageGames" Grid.Row="1" Visibility="Collapsed">
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="PageGamesTrans" Y="0"/>
+            </Grid.RenderTransform>
+
+            <!-- Übersicht -->
+            <Grid x:Name="GameListView">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid Margin="8,0,8,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,16,0">
+                        <TextBlock x:Name="GamesTitle" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                        <TextBlock x:Name="GamesDesc" Style="{StaticResource CardDesc}"/>
+                        <TextBlock x:Name="GamesNote" FontSize="12" Foreground="{StaticResource Warn}" TextWrapping="Wrap"
+                                   Margin="0,6,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                        <Button x:Name="GamesFolderBtn" Style="{StaticResource Ghost}" Click="GamesFolder_Click" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <Button x:Name="GamesAddBtn" Style="{StaticResource Action}" Click="GamesAdd_Click" Margin="0"/>
+                    </StackPanel>
+                </Grid>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False" Margin="0,0,-12,0">
+                    <ItemsControl x:Name="GameGrid" ItemTemplate="{StaticResource GameCardTemplate}" Margin="0,0,4,0" Focusable="False">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="4" VerticalAlignment="Top"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Ein Spiel -->
+            <Grid x:Name="GameDetailView" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="310"/>
+                    <ColumnDefinition Width="22"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <StackPanel>
+                        <Button x:Name="GameBackBtn" Style="{StaticResource Ghost}" HorizontalAlignment="Left" Click="GameBack_Click" Margin="-10,0,0,10"/>
+                        <Border Height="145" CornerRadius="14" BorderBrush="#242C3F" BorderThickness="1">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#1B2436" Offset="0"/>
+                                    <GradientStop Color="#0E1320" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Grid>
+                                <TextBlock x:Name="GameDetailInitials" FontSize="40" FontWeight="Light" Foreground="#4A5874"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border CornerRadius="13">
+                                    <Border.Background>
+                                        <ImageBrush x:Name="GameDetailImage" Stretch="UniformToFill"/>
+                                    </Border.Background>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <TextBlock x:Name="GameDetailName" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource Text}" Margin="0,14,0,0" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="GameDetailSub" Style="{StaticResource CardDesc}"/>
+                        <TextBlock x:Name="GameDetailDesc" Style="{StaticResource CardDesc}" Margin="0,8,0,0"/>
+                        <TextBlock x:Name="GameDetailCredit" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,8,0,0" TextWrapping="Wrap"/>
+
+                        <Border x:Name="GamePathCard" Style="{StaticResource Card}" Padding="14,12" Margin="0,16,0,0">
+                            <StackPanel>
+                                <TextBlock x:Name="GamePathTitle" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                <TextBlock x:Name="GamePathText" FontSize="11.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <Button x:Name="GamePathBtn" Style="{StaticResource Ghost}" HorizontalAlignment="Left" Margin="-10,6,0,0" Click="GamePath_Click"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border x:Name="GamePluginCard" Style="{StaticResource Card}" Padding="14,12" Margin="0,16,0,0" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock x:Name="GamePluginInfo" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+                                <Button x:Name="GameRemoveBtn" Style="{StaticResource Ghost}" HorizontalAlignment="Left" Margin="-10,6,0,0" Click="GameRemove_Click"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Border Grid.Column="2" Style="{StaticResource Card}" Padding="20,18,20,12" CornerRadius="18">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel>
+                            <TextBlock x:Name="GameOptTitle" Style="{StaticResource CardTitle}"/>
+                            <TextBlock x:Name="GameOptDesc" Style="{StaticResource CardDesc}"/>
+                            <TextBlock x:Name="GameAdminText" FontSize="12" Foreground="{StaticResource Warn}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+                        </StackPanel>
+                        <ScrollViewer Grid.Row="1" Margin="0,10,-8,0" VerticalScrollBarVisibility="Auto" Focusable="False">
+                            <StackPanel Margin="0,0,8,0">
+                                <ItemsControl x:Name="GameRowList" ItemTemplate="{StaticResource RowTemplate}" Focusable="False"/>
+                                <TextBlock x:Name="GameLaunchTitle" Style="{StaticResource CardTitle}" Margin="0,18,0,2" Visibility="Collapsed"/>
+                                <ItemsControl x:Name="GameLaunchList" ItemTemplate="{StaticResource LaunchItemTemplate}" Focusable="False"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
 
         <!-- ================= Seite 3: Retrac ================= -->
         <Grid x:Name="PageRetrac" Grid.Row="1" Visibility="Collapsed">

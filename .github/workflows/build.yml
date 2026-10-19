@@ -38,3 +38,12 @@ jobs:
             "{0}: {1:N0} Bytes, Version {2}" -f $f, (Get-Item $f).Length, $v
             if ($v -ne $want) { throw "$f hat Version $v, AutoUpdater sagt $want" }
           }
+
+      - name: Games-Tab selbst testen
+        shell: pwsh
+        run: |
+          $out = Join-Path $PWD 'games-selftest.txt'
+          $zip = Join-Path $PWD 'examples\plugins\rainbow-six-siege.zip'
+          $p = Start-Process -FilePath (Join-Path $PWD 'RetracBoost.exe') -ArgumentList @('--selftest', '--games', '--noelevate', '--plugin', "`"$zip`"", '--out', "`"$out`"") -Wait -PassThru
+          if (Test-Path $out) { Get-Content $out } else { throw "Kein Protokoll geschrieben" }
+          if ($p.ExitCode -ne 0) { throw "Games-Selbsttest fehlgeschlagen (Exitcode $($p.ExitCode))" }
