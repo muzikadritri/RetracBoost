@@ -1,5 +1,5 @@
 {
-  "version": "1.0.5",
-  "url": "https://github.com/muzikadritri/RetracBoost/releases/download/v1.0.5/RetracBoost.exe",
-  "changelog": "Alt+L-Menü: Bildwerte gelten nur noch im Spiel\nBeim Raustabben ist der PC sofort wieder normal\nNur der Bildschirm mit dem Spiel wird verändert"
+  "version": "1.0.6",
+  "url": "https://github.com/muzikadritri/RetracBoost/releases/download/v1.0.6/RetracBoost.exe",
+  "changelog": "Update-Knopf und Releases-Link zeigen wieder auf muzikadritri/RetracBoost\nEin falsch gespeichertes Repo aus älteren Versionen wird ignoriert"
 }

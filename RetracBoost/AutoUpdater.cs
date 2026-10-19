@@ -22,66 +22,48 @@ namespace RetracBoost
 
     public static class AutoUpdater
     {
-        public const string CurrentVersion = "1.0.5";
+        public const string CurrentVersion = "1.0.6";
 
-        public const string DefaultGitHubRepo = "muzikadritri/RetracBoost";
+        // Fest eingebaut. Gespeicherte Werte aus alten Versionen (state.ini, github_repo.txt) werden ignoriert und aufgeräumt.
+        public const string GitHubRepo = "muzikadritri/RetracBoost";
+        public const string ReleasesUrl = "https://github.com/" + GitHubRepo + "/releases";
         const string LocalManifestPath = @"C:\Retrac tools\update_manifest.json";
 
         public static string ResolveGitHubRepo()
         {
-            try
+            return GitHubRepo;
+        }
+
+        /// <summary>Entfernt Repo-Angaben, die ältere Versionen gespeichert haben (z. B. ein falscher Besitzer).</summary>
+        public static void ForgetStoredRepo()
+        {
+            try { if (Store.Get("github.repo") != null) Store.Set("github.repo", null); } catch { }
+
+            string appDir = AppDomain.CurrentDomain.BaseDirectory;
+            string[] files =
             {
-                string stored = Store.Get("github.repo");
-                if (!string.IsNullOrWhiteSpace(stored)) return NormalizeRepo(stored);
-
-                string appDir = AppDomain.CurrentDomain.BaseDirectory;
-                string[] files =
+                Path.Combine(appDir, "github_repo.txt"),
+                @"C:\Retrac tools\github_repo.txt",
+                Path.Combine(appDir, "updater_url.txt")
+            };
+            foreach (var f in files)
+            {
+                try
                 {
-                    Path.Combine(appDir, "github_repo.txt"),
-                    @"C:\Retrac tools\github_repo.txt",
-                    Path.Combine(appDir, "updater_url.txt")
-                };
-
-                foreach (var f in files)
-                {
-                    if (File.Exists(f))
-                    {
-                        string line = File.ReadAllText(f).Trim();
-                        if (!string.IsNullOrEmpty(line))
-                            return NormalizeRepo(line);
-                    }
+                    if (!File.Exists(f)) continue;
+                    if (File.ReadAllText(f).Trim() != GitHubRepo) File.WriteAllText(f, GitHubRepo);
                 }
+                catch { }
             }
-            catch { }
-            return DefaultGitHubRepo;
         }
 
-        public static void SaveGitHubRepo(string repo)
+        static bool IsOwnReleaseUrl(string url)
         {
-            try
-            {
-                string norm = NormalizeRepo(repo);
-                Store.TrySet("github.repo", norm);
-                string appDir = AppDomain.CurrentDomain.BaseDirectory;
-                File.WriteAllText(Path.Combine(appDir, "github_repo.txt"), norm);
-                try { File.WriteAllText(@"C:\Retrac tools\github_repo.txt", norm); } catch { }
-            }
-            catch { }
+            return !string.IsNullOrEmpty(url) &&
+                   url.StartsWith("https://github.com/" + GitHubRepo + "/releases/", StringComparison.OrdinalIgnoreCase);
         }
 
-        public static string NormalizeRepo(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return DefaultGitHubRepo;
-            input = input.Trim();
-            input = Regex.Replace(input, @"^https?://github\.com/", "", RegexOptions.IgnoreCase);
-            input = Regex.Replace(input, @"^github\.com/", "", RegexOptions.IgnoreCase);
-            input = Regex.Replace(input, @"/releases.*$", "", RegexOptions.IgnoreCase);
-            input = Regex.Replace(input, @"\.git$", "", RegexOptions.IgnoreCase);
-            input = input.Trim('/');
-            return string.IsNullOrEmpty(input) ? DefaultGitHubRepo : input;
-        }
-
-        public static async Task<UpdateInfo> CheckForUpdatesAsync(string customRepo = null)
+        public static async Task<UpdateInfo> CheckForUpdatesAsync()
         {
             var info = new UpdateInfo
             {
@@ -98,7 +80,7 @@ namespace RetracBoost
                 {
                     try { ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12; } catch { }
 
-                    string repo = NormalizeRepo(string.IsNullOrEmpty(customRepo) ? ResolveGitHubRepo() : customRepo);
+                    string repo = GitHubRepo;
 
                     // 1) Versuche direkte GitHub Releases API Abfrage
                     string apiUrl = "https://api.github.com/repos/" + repo + "/releases/latest";
@@ -223,7 +205,9 @@ namespace RetracBoost
                                 {
                                     string remoteVer = mVer.Groups[1].Value.Trim().TrimStart('v', 'V');
                                     info.LatestVersion = remoteVer;
-                                    if (mUrl.Success) info.DownloadUrl = mUrl.Groups[1].Value;
+                                    info.DownloadUrl = mUrl.Success && IsOwnReleaseUrl(mUrl.Groups[1].Value)
+                                        ? mUrl.Groups[1].Value
+                                        : ReleasesUrl + "/download/v" + remoteVer + "/RetracBoost.exe";
                                     if (mLog.Success) info.Changelog = mLog.Groups[1].Value.Replace("\\n", "\n");
                                     if (IsNewer(remoteVer, CurrentVersion))
                                     {
