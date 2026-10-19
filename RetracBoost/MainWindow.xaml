@@ -1270,7 +1270,8 @@
                             <TextBlock x:Name="LabelGitHubRepo" Text="GitHub Repo:" Foreground="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <TextBox x:Name="TxtGitHubRepo" Grid.Column="1" Background="Transparent" BorderThickness="0"
                                      Foreground="{StaticResource Text}" CaretBrush="{StaticResource Accent}" FontSize="12"
-                                     VerticalContentAlignment="Center" Text="muzikadritri/RetracBoost"/>
+                                     VerticalContentAlignment="Center" Text="muzikadritri/RetracBoost"
+                                     IsReadOnly="True" IsReadOnlyCaretVisible="False"/>
                             <Button x:Name="BtnOpenGitHub" Grid.Column="2" Style="{StaticResource Ghost}" Content="Releases ↗" FontSize="11.5" Margin="8,0,0,0" Click="OpenGitHub_Click"/>
                         </Grid>
                     </Border>
