@@ -15,8 +15,9 @@ namespace RetracBoost
     ///   --selftest [--out datei]                nur lesend: Adapter, Ping, DNS, Werkzeuge, Zustand der Tweaks
     ///   --selftest --apply [--skip-adapter]     zusätzlich: jeden Tweak anwenden, prüfen, zurücksetzen, prüfen (Admin)
     ///   --load                                  zusätzlich: Ping-unter-Last-Test (belastet die Leitung kurz)
+    ///   --games [--plugin datei.zip]            nur Games-Tab: Konfig-Editor, Plugin-Prüfung, Katalog (läuft im Build)
     /// </summary>
-    static class SelfTest
+    static partial class SelfTest
     {
         static StringBuilder log = new StringBuilder();
         static int failures;
@@ -38,6 +39,7 @@ namespace RetracBoost
 
             if (args.Contains("--server")) return RunServerProbe(outPath);
             if (args.Contains("--repair")) return RunRepair(outPath);
+            if (args.Contains("--games")) return RunGames(outPath, args);
 
             try
             {

@@ -24,6 +24,20 @@ Netzwerk-Stack, Netzwerkkarte, Energiesparplan, Spiel (QoS + CPU-Priorität), DN
 | Netzwerk reparieren | Caches leeren, Winsock zurücksetzen |
 | System & Komfort | TCP-Feintuning, Hintergrund pausieren, Timer 0,5 ms, Mit Windows starten, Ping-Overlay, Auto-Boost |
 
+## Tab „Games"
+Acht Spiele mit ihrem offiziellen Bild: Minecraft, Counter-Strike 2, GTA V, Fortnite, VALORANT, Apex Legends, Rocket League, PUBG.
+Steam-Spiele zeigen das Store-Bild vom Steam-CDN, die anderen das `og:image` der offiziellen Seite (minecraft.net, fortnite.com, playvalorant.com). Bilder werden 14 Tage zwischengespeichert.
+
+Pro Spiel gibt es einzelne Schalter. Alles wirkt über Windows und die Dateien des Spiels, das laufende Spiel wird nicht angefasst (wichtig wegen VAC, Easy Anti-Cheat, BattlEye, Vanguard):
+- **CPU-Priorität hoch** über Image File Execution Options (Windows setzt sie beim Start)
+- **Grafikkarte: hohe Leistung** (Windows-Grafikeinstellung pro Exe, wirkt bei zwei GPUs)
+- **Vollbildoptimierung aus**
+- **Werte in der Konfigurationsdatei des Spiels**, z. B. VSync aus (CS2 `cs2_video.txt`, Fortnite/PUBG `GameUserSettings.ini`, GTA V `settings.xml`, Minecraft `options.txt`). Geändert werden nur Schlüssel, die das Spiel selbst angelegt hat, nie während es läuft. Ausschalten schreibt die alten Werte zurück.
+- **Startoptionen** zum Kopieren (z. B. Apex `+fps_max 0`)
+
+Spiele werden in Steam-, Epic- und Riot-Bibliotheken gesucht; sonst lässt sich die Exe selbst wählen.
+Eigene Spiele kommen als **Plugin (ZIP)** dazu, ohne Code, nur mit den eingebauten Aktionen. Format: [docs/plugins.md](docs/plugins.md), Beispiel: `examples/plugins/rainbow-six-siege.zip`.
+
 ## Tab „Retrac"
 - **Spielserver:** findet die IP des Match-Servers aus dem laufenden Spiel (UDP-Ports des Spiels + Absender der eingehenden Pakete), zeigt Betreiber/Standort, Ping und Route. Wird bei jedem Match automatisch neu erkannt.
 - **Server-Lock (nur Frankfurt):** sperrt per Windows-Firewall ausgehendes UDP des Spiels zu **allen** AWS-Standorten in Europa außer Frankfurt (London, Irland, Paris, Stockholm, Mailand, Spanien, Zürich, Sovereign Cloud; alle Dienste, IPv4 + IPv6). Die Regel gilt nur für die Spiel-Exe. Der **Match-Server-Wächter** prüft jeden erkannten Match-Server: Steht er nachweislich nicht in Frankfurt (anderer AWS-Standort oder OVH-Rechenzentrum), wird seine Adresse **nach dem Match** zusätzlich gesperrt, nie mitten im Spiel.

@@ -9,7 +9,7 @@
     <AssemblyName>RetracBoost</AssemblyName>
     <RootNamespace>RetracBoost</RootNamespace>
     <Product>Retrac Boost</Product>
-    <Version>1.0.6</Version>
+    <Version>1.0.7</Version>
     <StartupObject>RetracBoost.Program</StartupObject>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>
@@ -21,6 +21,8 @@
   <ItemGroup>
     <Reference Include="System.Management" />
     <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
   </ItemGroup>
 
 </Project>

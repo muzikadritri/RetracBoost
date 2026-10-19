@@ -1,0 +1,26 @@
+{
+  "format": 1,
+  "id": "rainbow-six-siege",
+  "name": "Rainbow Six Siege X",
+  "version": "1.0.0",
+  "author": "Retrac Boost",
+  "publisher": "Ubisoft",
+  "anti_cheat": "BattlEye",
+  "description": {
+    "de": "Beispiel-Plugin. Nutzt nur Windows-Einstellungen, die Spieldateien bleiben unverändert.",
+    "en": "Example plugin. Uses Windows settings only, the game files stay untouched."
+  },
+  "steam_appid": 359550,
+  "exes": ["RainbowSix.exe", "RainbowSix_Vulkan.exe"],
+  "paths": [
+    "{steam}/Tom Clancy's Rainbow Six Siege/RainbowSix.exe",
+    "{steam}/Tom Clancy's Rainbow Six Siege/RainbowSix_Vulkan.exe",
+    "{programfilesx86}/Ubisoft/Ubisoft Game Launcher/games/Tom Clancy's Rainbow Six Siege/RainbowSix.exe",
+    "{programfilesx86}/Ubisoft/Ubisoft Game Launcher/games/Tom Clancy's Rainbow Six Siege/RainbowSix_Vulkan.exe"
+  ],
+  "optimizations": [
+    { "type": "priority", "level": "high" },
+    { "type": "gpu_high_performance" },
+    { "type": "fullscreen_optimizations_off" }
+  ]
+}
