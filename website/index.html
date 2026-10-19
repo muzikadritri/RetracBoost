@@ -7,6 +7,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Retrac Boost: Windows-Tool für Fortnite auf Retrac. Live-Ping, Server-Lock auf Frankfurt, Boost-Schalter, Werkzeuge und das Alt+L-Menü im Spiel.">
 <meta name="theme-color" content="#0A0D14">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%230A0D14%22/%3E%3Cpath d=%22M5 20h5l3-9 4 13 3-7h7%22 fill=%22none%22 stroke=%22%2300F5A0%22 stroke-width=%223%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&display=swap">
@@ -426,7 +427,7 @@ details .a p + p { margin-top: 10px; }
 /* ---------- Footer ---------- */
 footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
 .foot-mark { font-size: clamp(3.2rem, 15.2vw, 15.5rem); font-weight: 900; line-height: 0.8; letter-spacing: -0.05em; font-variation-settings: "wdth" 125; white-space: nowrap; margin: 0; }
-.foot-mark span { color: var(--accent); }
+.foot-mark > span { color: var(--accent); }
 .foot-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px 32px; margin-top: 40px; color: var(--muted); font-size: var(--step-small); }
 .foot-row nav { display: flex; flex-wrap: wrap; gap: 8px 24px; }
 .foot-row a { text-decoration: none; transition: color 160ms ease; }
@@ -458,6 +459,177 @@ footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
   .dot.live { animation: none; }
   *, *::before, *::after { transition-duration: 1ms !important; }
 }
+
+/* =========================================================
+   Motion-Schicht: Shader-Wellen, Springs, Wort-Reveals, Details
+   ========================================================= */
+html { scrollbar-color: var(--line-strong) var(--bg); }
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 10px; border: 2px solid var(--bg); }
+p, li, dd, summary { text-wrap: pretty; }
+:focus-visible { transition: outline-offset 160ms var(--ease-out); }
+a:focus-visible, button:focus-visible { outline-offset: 4px; }
+
+/* Nav */
+.nav { will-change: transform; }
+.nav.hide { transform: translateY(calc(-100% - env(safe-area-inset-top, 0px))); }
+.nav-ping { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; background: var(--raised); border-radius: 999px; font-size: 0.8125rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.nav-ping b { color: var(--text); font-weight: 700; min-width: 2ch; text-align: right; }
+.nav-links { position: relative; }
+.nav-links li { position: relative; }
+.nav-links a { position: relative; display: inline-block; padding-block: 6px; }
+.nav-links a.active { color: var(--text); }
+.nav-links .nav-ind { position: absolute; left: 0; bottom: -2px; height: 2px; width: 1px; background: var(--accent); transform-origin: left; opacity: 0; transition: transform 380ms var(--ease-out), opacity 200ms ease; pointer-events: none; }
+.lang { position: relative; }
+.lang button { position: relative; z-index: 1; }
+.lang button[aria-pressed="true"] { background: transparent; }
+.lang-ind { position: absolute; top: 3px; left: 3px; bottom: 3px; width: calc(50% - 3px); background: var(--line-strong); transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1); }
+html[lang="en"] .lang-ind { transform: translateX(100%); }
+.progress-line { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; }
+.progress-line i { display: block; height: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); }
+@media (max-width: 760px) { .nav-ping { display: none; } }
+
+/* Hero */
+.hero { position: relative; isolation: isolate; overflow: hidden; padding-bottom: clamp(64px, 8vw, 120px); }
+.hero-waves { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 78%; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 1200ms ease; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 75%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 75%, transparent); }
+.hero-waves.on { opacity: 1; }
+.hero h1 .ch { display: inline-block; will-change: transform; }
+.hero h1 .row span { animation: none !important; }
+.hero h1 .row:last-child .ch { color: var(--accent); }
+.hero h1 { cursor: default; }
+
+/* Hero-Panel: 3D-Neigung mit Spring */
+.hero-panel { perspective: 1400px; }
+.tilt { position: relative; transform-style: preserve-3d; will-change: transform; }
+.tilt-shine { position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit; opacity: 0; transition: opacity 300ms ease; background: radial-gradient(500px circle at var(--sx, 50%) var(--sy, 0%), rgba(255, 255, 255, 0.07), transparent 45%); }
+.tilt:hover .tilt-shine { opacity: 1; }
+
+/* Spotlight auf Flächen */
+.spot { position: relative; isolation: isolate; }
+.spot::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 260ms ease; background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgba(0, 245, 160, 0.09), transparent 60%); }
+@media (hover: hover) and (pointer: fine) { .spot:hover::before { opacity: 1; } }
+
+/* Magnet-Buttons + Glanz */
+.mag { will-change: transform; }
+.mag > * { pointer-events: none; }
+.sheen { position: relative; overflow: hidden; }
+.sheen::after { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; background: rgba(255, 255, 255, 0.35); transform: translateX(-120%) skewX(-20deg); pointer-events: none; }
+@media (hover: hover) and (pointer: fine) { .sheen:hover::after { transform: translateX(520%) skewX(-20deg); transition: transform 700ms var(--ease-out); } }
+
+/* Ticker */
+.ticker { margin-top: 0; padding-block: 22px; background: var(--surface); overflow: hidden; }
+.ticker-track { display: flex; width: max-content; will-change: transform; }
+.ticker ul { display: flex; gap: 0; margin: 0; padding: 0; list-style: none; }
+.ticker li { display: inline-flex; align-items: center; gap: 28px; padding-right: 28px; font-weight: 800; font-size: clamp(1.25rem, 2.2vw, 2rem); letter-spacing: -0.02em; font-variation-settings: "wdth" 118; white-space: nowrap; color: var(--text); }
+.ticker li::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex: none; }
+.ticker li:nth-child(3n+2) { color: var(--muted); }
+
+/* Wort-Reveal für Überschriften */
+.sw { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.1em; margin-bottom: -0.1em; }
+.sw > i { display: inline-block; font-style: normal; transition: transform 900ms var(--ease-out); transition-delay: calc(var(--i, 0) * 55ms); }
+.io .split.pre .sw > i { transform: translateY(108%) rotate(4deg); }
+.io .split.pre { opacity: 1 !important; transform: none !important; }
+
+/* Tool-Liste: Hover */
+.tool-list li { position: relative; transition: transform 300ms var(--ease-out); }
+.tool-list h3 { transition: color 200ms ease, transform 300ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .tool-list li:hover h3 { color: var(--accent); transform: translateX(10px); }
+}
+
+/* Spielserver: Traceroute-Lauf */
+.hops li { transition: background-color 260ms ease; }
+.hops li.hit { background: var(--accent-soft); }
+.hops li.hit .t { color: var(--accent); }
+
+/* Regionen-Liste <-> Karte */
+.region-list li { cursor: default; transition: color 200ms ease, transform 260ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) { .region-list li:hover { transform: translateX(4px); } .region-list li:hover b { color: var(--accent); } }
+
+/* Boost */
+.count span { display: inline-block; }
+.tweak h3 { transition: transform 300ms var(--ease-out); }
+.tweak.on h3 { transform: translateX(4px); }
+.tweak .pulse { position: absolute; right: 30px; top: 50%; width: 50px; height: 50px; margin-top: -25px; border-radius: 50%; background: var(--accent); opacity: 0; pointer-events: none; }
+
+/* Bufferbloat-Chart */
+.bloat-chart { width: 100%; height: 96px; margin-top: 14px; }
+.bloat-legend { display: flex; gap: 18px; margin-top: 8px; font-size: 0.8125rem; color: var(--muted); }
+.bloat-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.bloat-legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.lg-idle { background: var(--muted); }
+.lg-load { background: var(--accent); }
+
+/* Update-Haken */
+.u-status { display: inline-flex; align-items: center; gap: 6px; }
+.u-check { width: 14px; height: 14px; fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 16; stroke-dashoffset: 16; transition: stroke-dashoffset 420ms var(--ease-out); display: none; }
+.u-status.done .u-check { display: block; stroke-dashoffset: 0; }
+
+/* Code kopieren */
+.code-box { position: relative; }
+.copy { position: absolute; top: 10px; right: 10px; z-index: 1; border: 0; background: var(--raised); padding: 7px 12px; font-size: 0.8125rem; font-weight: 700; cursor: pointer; display: grid; transition: background-color 160ms ease, transform 140ms var(--ease-out); }
+.copy:active { transform: scale(0.95); }
+.copy > span { grid-area: 1 / 1; transition: transform 240ms var(--ease-out), opacity 200ms ease; }
+.copy .copy-b { opacity: 0; transform: translateY(70%); color: var(--accent); }
+.copy.done .copy-a { opacity: 0; transform: translateY(-70%); }
+.copy.done .copy-b { opacity: 1; transform: none; }
+@media (hover: hover) and (pointer: fine) { .copy:hover { background: var(--hover); } }
+
+/* Toast */
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 70; display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--raised); color: var(--text); font-size: 0.9375rem; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55); transform: translate(-50%, calc(100% + 40px)); opacity: 0; transition: transform 420ms cubic-bezier(0.32, 0.72, 0, 1), opacity 260ms ease; pointer-events: none; max-width: calc(100% - 32px); }
+.toast.show { transform: translate(-50%, 0); opacity: 1; }
+.toast > span { margin-left: 6px; }
+kbd { transition: transform 120ms var(--ease-out), border-bottom-width 120ms var(--ease-out), background-color 120ms ease; }
+kbd.down { transform: translateY(2px); border-bottom-width: 0; background: var(--accent); color: var(--accent-ink); }
+
+/* Nach oben */
+.to-top { position: fixed; right: max(20px, env(safe-area-inset-right, 0px)); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 60; width: 48px; height: 48px; display: grid; place-items: center; background: var(--raised); color: var(--accent); box-shadow: 0 10px 30px rgba(0,0,0,0.45); transform: translateY(16px) scale(0.92); opacity: 0; pointer-events: none; transition: transform 260ms var(--ease-out), opacity 200ms ease; }
+.to-top.show { transform: none; opacity: 1; pointer-events: auto; }
+.to-top svg { width: 20px; height: 20px; transition: transform 200ms var(--ease-out); }
+.to-top:active { transform: scale(0.94); }
+@media (hover: hover) and (pointer: fine) { .to-top:hover svg { transform: translateY(-3px); } }
+
+/* Footer-Wortmarke: Buchstaben heben sich */
+.foot-mark .fl { display: inline-block; will-change: transform; }
+.foot-mark { cursor: default; }
+
+/* Grüne Fläche öffnet sich */
+.field { will-change: clip-path; }
+
+/* FAQ */
+details .a { overflow: hidden; }
+summary { transition: background-color 180ms ease; }
+summary > span { transition: transform 260ms var(--ease-out); }
+details[open] summary > span { transform: translateX(6px); }
+
+/* Alt+L Feinschliff */
+.screen .scene-game, .screen .scene-desk { transition: opacity 320ms ease, filter 320ms ease; }
+.screen.desk .scene-game { filter: blur(6px); }
+.screen:not(.desk) .scene-desk { filter: blur(6px); }
+.gm { transition: transform 220ms var(--ease-out), opacity 200ms var(--ease-out), filter 220ms var(--ease-out); }
+.gm.closed, .screen.desk .gm { filter: blur(4px); }
+.gm input[type=range] { transition: filter 160ms ease; }
+.gm input[type=range]:active { filter: brightness(1.15); }
+.gm output { display: inline-block; transition: transform 160ms var(--ease-out); }
+.gm output.bump { transform: scale(1.12); }
+
+/* Potato */
+.compare .tag.r { transition: transform 260ms var(--ease-out), opacity 200ms ease; }
+.compare .tag.r.swap { transform: translateY(6px); opacity: 0; }
+.lod-big { position: absolute; top: 14px; right: 14px; padding: 6px 10px; background: rgba(10, 13, 20, 0.85); font-weight: 800; font-size: 1.25rem; font-variant-numeric: tabular-nums; color: var(--accent); font-variation-settings: "wdth" 115; pointer-events: none; }
+
+/* Links im Fließtext */
+.foot-row a, .note a { background: linear-gradient(currentColor, currentColor) left bottom / 0 1px no-repeat; transition: background-size 260ms var(--ease-out), color 160ms ease; }
+.foot-row a:hover { background-size: 100% 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { transform: none !important; flex-wrap: wrap; width: auto; }
+  .ticker ul + ul { display: none; }
+  .ticker ul { flex-wrap: wrap; row-gap: 8px; }
+  .nav.hide { transform: none; }
+  .io .split.pre .sw > i { transform: none; }
+}
 </style>
 </head>
 <body>
@@ -465,24 +637,29 @@ footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
 <header class="nav" id="top">
   <div class="wrap">
     <a class="wordmark" href="#top" aria-label="Retrac Boost"><b>RETRAC</b><span>BOOST</span></a>
-    <ul class="nav-links">
+    <span class="nav-ping" aria-hidden="true"><i class="dot live"></i><b id="navPing">27</b> ms</span>
+    <ul class="nav-links" id="navLinks">
       <li><a href="#server-lock">Server-Lock</a></li>
       <li><a href="#boost">Boost</a></li>
       <li><a href="#alt-l"><span data-l="de">Alt+L-Menü</span><span data-l="en">Alt+L menu</span></a></li>
       <li><a href="#werkzeuge"><span data-l="de">Werkzeuge</span><span data-l="en">Tools</span></a></li>
       <li><a href="#fragen"><span data-l="de">Fragen</span><span data-l="en">Questions</span></a></li>
+      <li class="nav-ind" aria-hidden="true"></li>
     </ul>
     <div class="lang" role="group" aria-label="Sprache / Language">
+      <i class="lang-ind" aria-hidden="true"></i>
       <button type="button" data-set-lang="de" aria-pressed="true">DE</button>
       <button type="button" data-set-lang="en" aria-pressed="false">EN</button>
     </div>
-    <a class="btn btn-primary" href="#download"><span data-l="de">Download</span><span data-l="en">Download</span></a>
+    <a class="btn btn-primary mag" href="#download"><span data-l="de">Download</span><span data-l="en">Download</span></a>
   </div>
+  <div class="progress-line" aria-hidden="true"><i id="scrollBar"></i></div>
 </header>
 
 <main>
 <!-- ===================== HERO ===================== -->
 <section class="hero" aria-labelledby="hero-title">
+  <canvas class="hero-waves" id="heroWaves" aria-hidden="true"></canvas>
   <div class="wrap grid">
     <div class="hero-text">
       <h1 id="hero-title"><span class="row"><span>Retrac</span></span><span class="row"><span>Boost</span></span></h1>
@@ -491,12 +668,12 @@ footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
         <span data-l="en">A Windows tool for Fortnite on Retrac. It shows your ping live, sets up Windows and your network card for gaming and keeps you on Frankfurt servers.</span>
       </p>
       <div class="hero-actions">
-        <a class="btn btn-primary" data-dl="setup" href="https://github.com/muzikadritri/RetracBoost/releases/latest/download/RetracBoost-Setup.exe">
+        <a class="btn btn-primary mag sheen" data-dl="setup" href="https://github.com/muzikadritri/RetracBoost/releases/latest/download/RetracBoost-Setup.exe">
           <svg class="arrow-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 4v13M6 11l6 6 6-6M5 21h14"/></svg>
           <span data-l="de">Herunterladen</span><span data-l="en">Download</span>
           <small class="js-version">v1.0.5</small>
         </a>
-        <a class="btn btn-ghost" href="https://github.com/muzikadritri/RetracBoost" target="_blank" rel="noopener">
+        <a class="btn btn-ghost mag" href="https://github.com/muzikadritri/RetracBoost" target="_blank" rel="noopener">
           <span data-l="de">Quellcode auf GitHub</span><span data-l="en">Source on GitHub</span>
           <svg class="arrow-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
         </a>
@@ -507,8 +684,9 @@ footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
       </p>
     </div>
 
-    <div class="hero-panel">
-      <div class="app" data-ui>
+    <div class="hero-panel" id="heroPanel">
+      <div class="app tilt" data-ui id="tiltCard">
+        <i class="tilt-shine" aria-hidden="true"></i>
         <div class="app-bar">
           <span class="mark"><b>RETRAC</b> <span>BOOST</span></span>
           <div class="app-tabs" aria-hidden="true"><span class="on">Boost</span><span data-l="de">Werkzeuge</span><span data-l="en">Tools</span><span>Retrac</span></div>
@@ -535,6 +713,10 @@ footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
     </div>
   </div>
 </section>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track" id="tickerTrack"><ul><li><span data-l="de">UDP-Fastpath</span><span data-l="en">UDP fast path</span></li><li><span data-l="de">DSCP 46</span><span data-l="en">DSCP 46</span></li><li><span data-l="de">eu-central-1</span><span data-l="en">eu-central-1</span></li><li><span data-l="de">Alt+L</span><span data-l="en">Alt+L</span></li><li><span data-l="de">LOD-Bias +1,5</span><span data-l="en">LOD bias +1.5</span></li><li><span data-l="de">Bufferbloat A+</span><span data-l="en">Bufferbloat A+</span></li><li><span data-l="de">IPv4 + IPv6</span><span data-l="en">IPv4 + IPv6</span></li><li><span data-l="de">RSS an</span><span data-l="en">RSS on</span></li><li><span data-l="de">Ultimative Leistung</span><span data-l="en">Ultimate Performance</span></li><li><span data-l="de">RAM-Wächter</span><span data-l="en">RAM watcher</span></li><li><span data-l="de">Winsock-Reset</span><span data-l="en">Winsock reset</span></li><li><span data-l="de">Pfad-MTU</span><span data-l="en">Path MTU</span></li><li><span data-l="de">Timer 0,5 ms</span><span data-l="en">0.5 ms timer</span></li><li><span data-l="de">state.ini</span><span data-l="en">state.ini</span></li></ul><ul><li><span data-l="de">UDP-Fastpath</span><span data-l="en">UDP fast path</span></li><li><span data-l="de">DSCP 46</span><span data-l="en">DSCP 46</span></li><li><span data-l="de">eu-central-1</span><span data-l="en">eu-central-1</span></li><li><span data-l="de">Alt+L</span><span data-l="en">Alt+L</span></li><li><span data-l="de">LOD-Bias +1,5</span><span data-l="en">LOD bias +1.5</span></li><li><span data-l="de">Bufferbloat A+</span><span data-l="en">Bufferbloat A+</span></li><li><span data-l="de">IPv4 + IPv6</span><span data-l="en">IPv4 + IPv6</span></li><li><span data-l="de">RSS an</span><span data-l="en">RSS on</span></li><li><span data-l="de">Ultimative Leistung</span><span data-l="en">Ultimate Performance</span></li><li><span data-l="de">RAM-Wächter</span><span data-l="en">RAM watcher</span></li><li><span data-l="de">Winsock-Reset</span><span data-l="en">Winsock reset</span></li><li><span data-l="de">Pfad-MTU</span><span data-l="en">Path MTU</span></li><li><span data-l="de">Timer 0,5 ms</span><span data-l="en">0.5 ms timer</span></li><li><span data-l="de">state.ini</span><span data-l="en">state.ini</span></li></ul></div>
+</div>
 
 <!-- ===================== SERVER-LOCK ===================== -->
 <section class="lock" id="server-lock" aria-labelledby="lock-title">
@@ -587,7 +769,7 @@ footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
             <div>
               <span class="pill"><i class="dot live"></i> <span data-l="de">Match erkannt</span><span data-l="en">Match detected</span></span>
               <div class="srv-ip" style="margin-top:12px">3.120.●●.●●</div>
-              <div class="srv-where">Amazon AWS · Frankfurt (eu-central-1)</div>
+              <div class="srv-where" data-scramble>Amazon AWS · Frankfurt (eu-central-1)</div>
             </div>
             <div class="srv-ms"><span id="srvMs">24</span> <small>ms</small></div>
           </div>
@@ -646,27 +828,27 @@ footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
     </div>
     <div class="boost-body">
       <ul class="tweaks" id="tweaks">
-        <li class="tweak">
+        <li class="tweak spot">
           <h3><span data-l="de">Netzwerk-Stack</span><span data-l="en">Network stack</span></h3>
           <p><span data-l="de">UDP-Fastpath an, keine verzögerten ACKs, keine Netzwerkdrosselung, Spiele-Scheduler auf Echtzeit. Unter Windows 11 kommt UDP Receive Offload weg.</span><span data-l="en">UDP fast path on, no delayed ACKs, no network throttling, game scheduler set to real time. On Windows 11 UDP receive offload is turned off.</span></p>
           <button type="button" class="toggle" role="switch" aria-checked="false" aria-label="Netzwerk-Stack"><span class="switch"></span></button>
         </li>
-        <li class="tweak">
+        <li class="tweak spot">
           <h3><span data-l="de">Netzwerkkarte</span><span data-l="en">Network card</span></h3>
           <p><span data-l="de">Interrupt-Moderation, Paket-Bündelung, Energiesparen, Flusssteuerung und WLAN-Roaming aus, RSS an. Gesetzt wird nur, was dein Treiber selbst anbietet.</span><span data-l="en">Interrupt moderation, packet coalescing, power saving, flow control and Wi-Fi roaming off, RSS on. Only what your driver offers gets changed.</span></p>
           <button type="button" class="toggle" role="switch" aria-checked="false" aria-label="Netzwerkkarte"><span class="switch"></span></button>
         </li>
-        <li class="tweak">
+        <li class="tweak spot">
           <h3><span data-l="de">Energiesparplan</span><span data-l="en">Power plan</span></h3>
           <p><span data-l="de">Am Desktop „Ultimative Leistung“, am Notebook „Höchstleistung“. Den angelegten Plan löscht die App beim Zurücksetzen wieder.</span><span data-l="en">"Ultimate Performance" on a desktop, "High performance" on a laptop. The app deletes the plan again when you reset.</span></p>
           <button type="button" class="toggle" role="switch" aria-checked="false" aria-label="Energiesparplan"><span class="switch"></span></button>
         </li>
-        <li class="tweak">
+        <li class="tweak spot">
           <h3><span data-l="de">Spiel</span><span data-l="en">Game</span></h3>
           <p><span data-l="de">Pakete des Spiels bekommen Echtzeit-Priorität (DSCP 46), dazu hohe CPU-, I/O- und RAM-Priorität. Die setzt Windows beim Start, die App greift nicht ins Spiel.</span><span data-l="en">The game's packets get real-time priority (DSCP 46), plus high CPU, I/O and RAM priority. Windows applies it on launch, the app never touches the game.</span></p>
           <button type="button" class="toggle" role="switch" aria-checked="false" aria-label="Spiel"><span class="switch"></span></button>
         </li>
-        <li class="tweak">
+        <li class="tweak spot">
           <h3>DNS</h3>
           <p><span data-l="de">Misst deinen aktuellen DNS gegen Cloudflare, Google, Quad9 und OpenDNS und nimmt den schnellsten. Ist deiner schon schnell, bleibt er.</span><span data-l="en">Measures your current DNS against Cloudflare, Google, Quad9 and OpenDNS and uses the fastest. If yours is already fast, it stays.</span></p>
           <button type="button" class="toggle" role="switch" aria-checked="false" aria-label="DNS"><span class="switch"></span></button>
@@ -674,7 +856,7 @@ footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
       </ul>
 
       <div class="boost-side">
-        <div class="boost-all reveal">
+        <div class="boost-all reveal spot">
           <div class="count num" aria-live="polite"><span id="onCount">0</span>/5</div>
           <p class="note" id="boostState"><span data-l="de">Noch nichts geändert.</span><span data-l="en">Nothing changed yet.</span></p>
           <button type="button" class="btn btn-primary" id="boostAll"><span data-l="de">Alles boosten</span><span data-l="en">Boost all</span></button>
@@ -772,6 +954,7 @@ footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
         <canvas class="after" id="texAfter" aria-hidden="true"></canvas>
         <span class="tag l"><span data-l="de">Normal</span><span data-l="en">Normal</span></span>
         <span class="tag r" id="tagR">Mittel</span>
+        <span class="lod-big" id="lodBig" aria-hidden="true">+1,5</span>
         <div class="handle" id="handle" role="slider" tabindex="0" aria-label="Vergleich verschieben" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
           <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="m9 6-6 6 6 6M15 6l6 6-6 6"/></svg></span>
         </div>
@@ -814,12 +997,14 @@ footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
         </li>
       </ul>
 
-      <div class="bloat reveal" data-ui>
+      <div class="bloat reveal spot" data-ui>
         <h3 style="font-family:var(--font)"><span data-l="de">So wird benotet</span><span data-l="en">How it's graded</span></h3>
         <p class="note"><span data-l="de">Die Note hängt nur davon ab, wie viel Ping unter Last dazukommt. Schieb den Regler.</span><span data-l="en">The grade only depends on how much ping is added under load. Move the slider.</span></p>
         <div class="grade"><b id="gradeLetter">A</b><span><span id="gradeMs">+18</span> ms</span></div>
         <label for="bloatRange" class="note"><span data-l="de">Anstieg unter Last</span><span data-l="en">Increase under load</span></label>
         <input type="range" id="bloatRange" min="0" max="500" step="1" value="18">
+        <canvas class="bloat-chart" id="bloatChart" aria-hidden="true"></canvas>
+        <div class="bloat-legend" aria-hidden="true"><span><i class="lg-idle"></i><span data-l="de">Leerlauf</span><span data-l="en">Idle</span></span><span><i class="lg-load"></i><span data-l="de">Unter Last</span><span data-l="en">Under load</span></span></div>
         <div class="scale" id="gradeScale">
           <div><b>A+</b><span>&lt;5</span></div>
           <div><b>A</b><span>&lt;30</span></div>
@@ -842,7 +1027,7 @@ footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
         <span data-l="de">Zurücksetzen fasst nur an, was die App selbst geändert hat. Vorher sichert sie die Originalwerte. Was bei dir schon so eingestellt war, bleibt unangetastet, und jede Zeile lässt sich einzeln zurücknehmen.</span>
         <span data-l="en">Reset only touches what the app changed itself. It saves the original values first. Anything that was already set that way on your PC stays untouched, and each row can be undone on its own.</span>
       </p>
-      <p class="path">C:\ProgramData\RetracBoost\state.ini</p>
+      <p class="path" data-scramble>C:\ProgramData\RetracBoost\state.ini</p>
     </div>
     <div class="col-b">
       <h2 class="wipe"><span data-l="de">Was es nicht kann</span><span data-l="en">What it can't do</span></h2>
@@ -877,7 +1062,7 @@ footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
       <div class="app update-ui reveal-3" data-ui>
         <div class="app-bar"><b style="font-size:14px">Updates</b><span style="color:var(--muted);margin-left:auto" class="js-version">v1.0.5</span></div>
         <div class="u-body">
-          <div class="u-row"><strong id="uStatus"><span data-l="de">Lade herunter …</span><span data-l="en">Downloading …</span></strong><span id="uPct">0%</span></div>
+          <div class="u-row"><strong id="uStatus" class="u-status"><svg class="u-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5"/></svg><span data-l="de">Lade herunter …</span><span data-l="en">Downloading …</span></strong><span id="uPct">0%</span></div>
           <div class="progress"><i id="uBar"></i></div>
         </div>
       </div>
@@ -949,10 +1134,11 @@ footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
         </dl>
         <div>
           <h3 style="margin-bottom:12px"><span data-l="de">Selbsttest</span><span data-l="en">Self test</span></h3>
-<pre><code><span class="c"># <span data-l="de">nur lesend</span><span data-l="en">read only</span></span>
+<div class="code-box"><button type="button" class="copy" id="copyBtn"><span class="copy-a"><span data-l="de">Kopieren</span><span data-l="en">Copy</span></span><span class="copy-b"><span data-l="de">Kopiert</span><span data-l="en">Copied</span></span></button>
+<pre><code id="codeText"><span class="c"># <span data-l="de">nur lesend</span><span data-l="en">read only</span></span>
 RetracBoost.exe --selftest --out ergebnis.txt
 <span class="c"># <span data-l="de">Spielserver des laufenden Matches (Admin)</span><span data-l="en">game server of the running match (admin)</span></span>
-RetracBoost.exe --selftest --server --out server.txt</code></pre>
+RetracBoost.exe --selftest --server --out server.txt</code></pre></div>
         </div>
       </div>
     </div>
@@ -998,7 +1184,7 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
 
 <footer>
   <div class="wrap">
-    <p class="foot-mark" aria-hidden="true">RETRAC <span>BOOST</span></p>
+    <p class="foot-mark" id="footMark" aria-hidden="true">RETRAC <span>BOOST</span></p>
     <div class="foot-row">
       <span>Retrac Boost <span class="js-version">v1.0.5</span> · <span data-l="de">für Windows 10 und 11</span><span data-l="en">for Windows 10 and 11</span></span>
       <nav aria-label="Footer">
@@ -1010,6 +1196,9 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
     </div>
   </div>
 </footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><kbd>Alt</kbd><kbd>L</kbd><span><span data-l="de">Probier das Ingame-Menü direkt hier aus</span><span data-l="en">Try the in-game menu right here</span></span></div>
+<a class="to-top" id="toTop" href="#top" aria-label="Nach oben"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 19V6M6 12l6-6 6 6"/></svg></a>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <filter id="gmFilter" color-interpolation-filters="sRGB">
@@ -1126,6 +1315,7 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
       if (offset >= 1) {
         offset -= 1; data.shift(); data.push(next()); tick++;
         vEl.textContent = Math.round(data[N - 2]);
+        var np = document.getElementById("navPing"); if (np) np.textContent = Math.round(data[N - 2]);
         if (tick % 3 === 0) stats();
       }
       draw();
@@ -1171,6 +1361,7 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
     ];
     var PC = { lon: -9.2, lat: 46.6 };
     var locked = true, lockT = 1, visible = true, running = false, lastT = 0;
+    var intro = reduce ? 1 : 0, introStarted = reduce, hl = null, sparks = [], clock = 0, ringT = 0;
     var W = 0, H = 0, P = 1, dots = [], packets = [];
     var KX = Math.cos(48 * Math.PI / 180);
     function proj(lon, lat) {
@@ -1216,9 +1407,14 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
       for (var i = 0; i < dots.length; i++) { ctx.beginPath(); ctx.arc(dots[i][0], dots[i][1], dr, 0, 6.3); ctx.fill(); }
       var R = Math.min(W, H);
       // Linien
-      REG.forEach(function (r) {
+      REG.forEach(function (r, ri) {
         var q = ctrl(PC.p, r.p), blocked = !r.ok && lockT > 0.5;
-        ctx.beginPath(); ctx.moveTo(PC.p[0], PC.p[1]); ctx.quadraticCurveTo(q[0], q[1], r.p[0], r.p[1]);
+        var lp = Math.max(0, Math.min(1, (intro * 1.6 - ri * 0.06)));
+        lp = 1 - Math.pow(1 - lp, 3);
+        if (lp <= 0) return;
+        ctx.beginPath(); ctx.moveTo(PC.p[0], PC.p[1]);
+        if (lp >= 1) ctx.quadraticCurveTo(q[0], q[1], r.p[0], r.p[1]);
+        else { for (var s2 = 1; s2 <= 24; s2++) { var bp = bez(PC.p, q, r.p, lp * s2 / 24); ctx.lineTo(bp[0], bp[1]); } }
         ctx.setLineDash(blocked ? [3 * P, 5 * P] : []);
         ctx.strokeStyle = r.ok ? "rgba(0,245,160,0.55)" : blocked ? "rgba(248,113,113,0.28)" : "rgba(139,148,167,0.35)";
         ctx.lineWidth = (r.ok ? 2 : 1.2) * P; ctx.stroke();
@@ -1228,7 +1424,10 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
       if (lockT > 0.01) {
         var rr = R * 0.105;
         ctx.strokeStyle = "rgba(248,113,113," + (0.85 * lockT) + ")"; ctx.lineWidth = 3 * P;
-        ctx.beginPath(); ctx.arc(PC.p[0], PC.p[1], rr * mix(0.7, 1, lockT), -Math.PI * 0.62, Math.PI * 0.42); ctx.stroke();
+        var sweep = Math.PI * 1.04 * Math.min(1, lockT * 1.15);
+        ctx.beginPath(); ctx.arc(PC.p[0], PC.p[1], rr * mix(0.7, 1, lockT), -Math.PI * 0.62, -Math.PI * 0.62 + sweep); ctx.stroke();
+        ctx.strokeStyle = "rgba(248,113,113," + (0.25 * lockT) + ")"; ctx.lineWidth = 10 * P;
+        ctx.beginPath(); ctx.arc(PC.p[0], PC.p[1], rr * mix(0.7, 1, lockT), -Math.PI * 0.62, -Math.PI * 0.62 + sweep); ctx.stroke();
       }
       // Pakete
       packets.forEach(function (k) {
@@ -1237,12 +1436,28 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
         ctx.fillStyle = k.dead ? "rgba(248,113,113," + a + ")" : (k.r.ok ? C.accent : C.text);
         ctx.beginPath(); ctx.arc(pt[0], pt[1], (k.dead ? 2.6 + k.dead * 0.12 : 2.6) * P, 0, 6.3); ctx.fill();
       });
+      sparks.forEach(function (sp) {
+        ctx.fillStyle = "rgba(248,113,113," + Math.max(0, 1 - sp.age / 26) + ")";
+        ctx.beginPath(); ctx.arc(sp.x, sp.y, 1.6 * P, 0, 6.3); ctx.fill();
+      });
       // Standorte
       ctx.textBaseline = "middle";
-      REG.forEach(function (r) {
+      REG.forEach(function (r, ri) {
         var blocked = !r.ok && lockT > 0.5, x = r.p[0], y = r.p[1];
-        var s = (r.ok ? 7 : 5) * P;
-        if (r.ok) { ctx.fillStyle = "rgba(0,245,160,0.18)"; ctx.beginPath(); ctx.arc(x, y, s * 2.4, 0, 6.3); ctx.fill(); }
+        var pop = Math.max(0, Math.min(1, intro * 2 - 0.5 - ri * 0.07));
+        if (pop <= 0) return;
+        var popE = 1 + Math.sin(pop * Math.PI) * 0.35 * (1 - pop) ;
+        var s = (r.ok ? 7 : 5) * P * (0.6 + 0.4 * pop) * popE * (hl === r.id ? 1.5 : 1);
+        ctx.globalAlpha = pop;
+        if (r.ok) {
+          for (var rg = 0; rg < 2; rg++) {
+            var ph = ((clock / 1800) + rg * 0.5) % 1;
+            ctx.strokeStyle = "rgba(0,245,160," + (0.5 * (1 - ph)) + ")"; ctx.lineWidth = 1.5 * P;
+            ctx.beginPath(); ctx.arc(x, y, s * (1.4 + ph * 4.2), 0, 6.3); ctx.stroke();
+          }
+          ctx.fillStyle = "rgba(0,245,160,0.18)"; ctx.beginPath(); ctx.arc(x, y, s * 2.4, 0, 6.3); ctx.fill();
+        }
+        if (hl === r.id && !r.ok) { ctx.strokeStyle = blocked ? "rgba(248,113,113,0.6)" : "rgba(240,243,249,0.6)"; ctx.lineWidth = 1.5 * P; ctx.beginPath(); ctx.arc(x, y, s * 2.2, 0, 6.3); ctx.stroke(); }
         ctx.fillStyle = r.ok ? C.accent : blocked ? C.bad : C.text;
         if (blocked) {
           ctx.strokeStyle = C.bad; ctx.lineWidth = 2.4 * P;
@@ -1258,6 +1473,7 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
         else if (right && r.id !== "par") { ctx.textAlign = "right"; ctx.fillText(label, x - off, y); }
         else { ctx.textAlign = "left"; ctx.fillText(label, x + off, y + (r.id === "sov" ? -4 * P : 0)); }
       });
+      ctx.globalAlpha = 1;
       // PC
       var bw = 92 * P, bh = 34 * P, px = PC.p[0], py = PC.p[1];
       ctx.fillStyle = C.raised; ctx.fillRect(px - bw / 2, py - bh / 2, bw, bh);
@@ -1266,13 +1482,21 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
       ctx.textAlign = "left";
     }
     function step(dt) {
+      clock += dt;
+      if (introStarted && intro < 1) intro = Math.min(1, intro + dt / 1500);
+      sparks.forEach(function (sp) { sp.x += sp.vx * dt / 16; sp.y += sp.vy * dt / 16; sp.vx *= 0.94; sp.vy *= 0.94; sp.age += dt / 16; });
+      sparks = sparks.filter(function (sp) { return sp.age < 26; });
       var target = locked ? 1 : 0;
       lockT += (target - lockT) * Math.min(1, dt / 160);
-      if (Math.random() < dt / 70) spawn();
+      if (intro > 0.7 && Math.random() < dt / 70) spawn();
       packets.forEach(function (k) {
         if (k.dead) { k.dead += dt / 16; return; }
         k.t += k.v * dt / 16;
-        if (!k.r.ok && lockT > 0.5 && k.t >= WALL && k.t < WALL + 0.05) { k.t = WALL; k.dead = 1; }
+        if (!k.r.ok && lockT > 0.5 && k.t >= WALL && k.t < WALL + 0.05) {
+          k.t = WALL; k.dead = 1;
+          var q2 = ctrl(PC.p, k.r.p), at = bez(PC.p, q2, k.r.p, WALL);
+          for (var n2 = 0; n2 < 6; n2++) { var an = Math.random() * 6.3, sv = (1 + Math.random() * 2) * P; sparks.push({ x: at[0], y: at[1], vx: Math.cos(an) * sv, vy: Math.sin(an) * sv, age: 0 }); }
+        }
       });
       packets = packets.filter(function (k) { return k.t < 1 && (!k.dead || k.dead < 30); });
     }
@@ -1298,6 +1522,7 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
       list.innerHTML = "";
       REG.forEach(function (r) {
         var li = document.createElement("li");
+        li.setAttribute("data-id", r.id);
         var st = r.ok ? t("offen", "open") : (locked ? t("gesperrt", "blocked") : t("offen", "open"));
         li.innerHTML = "<span><b></b> " + "<span></span></span><span class='st " + (r.ok || !locked ? "ok" : "no") + "'></span>";
         li.querySelector("b").textContent = lang === "en" ? r.en : r.de;
@@ -1315,12 +1540,13 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
       locked = !locked; btn.setAttribute("aria-pressed", String(locked)); renderList();
       if (reduce) staticFrame();
     });
-    whenVisible(c, function (v) { visible = v; v ? start() : stop(); });
+    whenVisible(c, function (v) { visible = v; if (v) introStarted = true; v ? start() : stop(); });
     document.addEventListener("visibilitychange", function () { document.hidden ? stop() : start(); });
     window.addEventListener("resize", function () { build(); reduce ? staticFrame() : draw(); });
+    list.addEventListener("pointerover", function (e) { var li = e.target.closest("li"); if (!li) return; hl = li.getAttribute("data-id"); if (!running) draw(); });
+    list.addEventListener("pointerleave", function () { hl = null; if (!running) draw(); });
     onLang(function () { renderList(); if (!running) staticFrame(); });
     build(); renderList();
-    for (var i = 0; i < 160; i++) step(16);
     draw(); if (reduce) staticFrame(); start();
     if (document.fonts) document.fonts.ready.then(function () { if (!running) draw(); });
   })();
@@ -1355,6 +1581,16 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
         li.querySelector("i").animate([{ transform: "scaleX(0)" }, { transform: li.querySelector("i").style.transform }], { duration: 700, delay: 220 + i * 90, easing: "cubic-bezier(0.23,1,0.32,1)", fill: "backwards" });
       });
     });
+    if (!reduce) {
+      var hi = 0;
+      setInterval(function () {
+        if (document.hidden) return;
+        var lis = ol.children; if (!lis.length) return;
+        Array.prototype.forEach.call(lis, function (li) { li.classList.remove("hit"); });
+        if (hi < lis.length) lis[hi].classList.add("hit");
+        hi = (hi + 1) % (lis.length + 3);
+      }, 420);
+    }
     var ms = document.getElementById("srvMs"), base = 24;
     setInterval(function () { if (!document.hidden) ms.textContent = base + Math.round((Math.random() - 0.4) * 2); }, 1200);
   })();
@@ -1367,6 +1603,9 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
     var all = document.getElementById("boostAll");
     function update() {
       var n = items.filter(function (li) { return li.classList.contains("on"); }).length;
+      if (String(n) !== count.textContent && !reduce) {
+        count.animate([{ transform: "translateY(45%)", opacity: 0, filter: "blur(4px)" }, { transform: "none", opacity: 1, filter: "blur(0)" }], { duration: 320, easing: "cubic-bezier(0.23,1,0.32,1)" });
+      }
       count.textContent = n;
       state.textContent = n === 0 ? t("Noch nichts geändert.", "Nothing changed yet.")
         : n === 5 ? t("Alles an. Zurücksetzen nimmt jede Zeile einzeln zurück.", "All on. Reset undoes each row on its own.")
@@ -1376,6 +1615,11 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
       all.classList.toggle("btn-ghost", n === 5); all.classList.toggle("btn-primary", n !== 5);
     }
     function set(li, on) {
+      if (on && !li.classList.contains("on") && !reduce) {
+        var pulse = document.createElement("i"); pulse.className = "pulse"; li.appendChild(pulse);
+        pulse.animate([{ transform: "scale(0.4)", opacity: 0.35 }, { transform: "scale(3.2)", opacity: 0 }], { duration: 650, easing: "cubic-bezier(0.23,1,0.32,1)" }).onfinish = function () { pulse.remove(); };
+        if (navigator.vibrate) { try { navigator.vibrate(8); } catch (e) {} }
+      }
       li.classList.toggle("on", on);
       li.querySelector("[role=switch]").setAttribute("aria-checked", String(on));
     }
@@ -1405,17 +1649,19 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
     var stateEl = document.getElementById("screenState");
     var inGame = true, open = true;
 
+    var gt = 0;
     function drawGame() {
       var d = fitCanvas(game), w = d.w, h = d.h, ctx = game.getContext("2d");
       ctx.fillStyle = "#7FB4E0"; ctx.fillRect(0, 0, w, h);
       ctx.fillStyle = "#A9CFEE"; ctx.fillRect(0, h * 0.34, w, h * 0.12);
       ctx.fillStyle = "#FFE7A3"; ctx.beginPath(); ctx.arc(w * 0.2, h * 0.22, h * 0.07, 0, 7); ctx.fill();
       function cloud(x, y, s) { ctx.fillStyle = "#EAF4FC"; [[0,0,1],[0.9,-0.3,1.2],[1.9,0,0.9]].forEach(function (c) { ctx.beginPath(); ctx.arc(x + c[0] * s, y + c[1] * s, c[2] * s, 0, 7); ctx.fill(); }); }
-      cloud(w * 0.42, h * 0.16, h * 0.035); cloud(w * 0.7, h * 0.24, h * 0.028);
+      var cx1 = ((0.42 + gt * 0.006) % 1.2) - 0.1, cx2 = ((0.7 + gt * 0.004) % 1.2) - 0.1, cx3 = ((0.05 + gt * 0.005) % 1.2) - 0.1;
+      cloud(w * cx1, h * 0.16, h * 0.035); cloud(w * cx2, h * 0.24, h * 0.028); cloud(w * cx3, h * 0.11, h * 0.022);
       function hill(y0, amp, col, f) { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, h); for (var x = 0; x <= w; x += w / 60) ctx.lineTo(x, y0 + Math.sin(x / w * f + y0) * amp); ctx.lineTo(w, y0 + Math.sin(f + y0) * amp); ctx.lineTo(w, h); ctx.fill(); }
       hill(h * 0.5, h * 0.05, "#5C8F9E", 5); hill(h * 0.58, h * 0.04, "#3F7F57", 7); hill(h * 0.7, h * 0.03, "#2E6B3F", 9);
       ctx.fillStyle = "#3C78B8"; ctx.fillRect(0, h * 0.86, w, h * 0.14);
-      ctx.fillStyle = "#4E8BCB"; for (var i = 0; i < 9; i++) ctx.fillRect(w * (i / 9 + 0.02), h * 0.9 + (i % 2) * h * 0.03, w * 0.05, h * 0.006);
+      ctx.fillStyle = "#4E8BCB"; for (var i = 0; i < 9; i++) ctx.fillRect(w * (((i / 9 + 0.02 + gt * 0.01 * (i % 2 ? 1 : -0.6)) % 1 + 1) % 1), h * 0.9 + (i % 2) * h * 0.03, w * 0.05, h * 0.006);
       // Turm
       var tx = w * 0.6, ty = h * 0.42, tw = w * 0.07, th = h * 0.32;
       ctx.fillStyle = "#8B5E3C"; ctx.fillRect(tx, ty, tw, th);
@@ -1435,7 +1681,7 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
       var p = d.dpr, sc = w / (900 * p);
       ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(w * 0.02, h * 0.04, w * 0.16, h * 0.08);
       ctx.fillStyle = "#fff"; ctx.font = "700 " + Math.round(15 * p * Math.max(sc, 0.6)) + "px " + FONT; ctx.textBaseline = "middle";
-      ctx.fillText("27 ms", w * 0.035, h * 0.08);
+      ctx.fillText((26 + Math.round(Math.sin(gt * 1.3) * 1.5)) + " ms", w * 0.035, h * 0.08);
       ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(w * 0.3, h * 0.9, w * 0.4, h * 0.06);
       for (var s2 = 0; s2 < 5; s2++) { ctx.fillStyle = s2 === 1 ? "#FFD25A" : "rgba(255,255,255,0.75)"; ctx.fillRect(w * (0.31 + s2 * 0.078), h * 0.91, w * 0.07, h * 0.04); }
     }
@@ -1483,13 +1729,29 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
       document.getElementById("fgDesk").setAttribute("aria-pressed", String(!g));
       apply();
     }
-    Object.keys(inputs).forEach(function (k) { inputs[k].addEventListener("input", apply); });
-    document.getElementById("gReset").addEventListener("click", function () { inputs.g.value = 1; inputs.b.value = 0; inputs.c.value = 1; inputs.w.value = 0; apply(); });
+    Object.keys(inputs).forEach(function (k) {
+      inputs[k].addEventListener("input", function () {
+        apply();
+        if (!reduce) { outs[k].classList.add("bump"); clearTimeout(outs[k]._t); outs[k]._t = setTimeout(function () { outs[k].classList.remove("bump"); }, 140); }
+      });
+    });
+    document.getElementById("gReset").addEventListener("click", function () {
+      var from = { g: +inputs.g.value, b: +inputs.b.value, c: +inputs.c.value, w: +inputs.w.value }, to = { g: 1, b: 0, c: 1, w: 0 };
+      if (reduce) { Object.keys(to).forEach(function (k) { inputs[k].value = to[k]; }); apply(); return; }
+      var t0 = null;
+      (function tw(ts) {
+        if (!t0) t0 = ts; var k2 = Math.min(1, (ts - t0) / 380), e2 = 1 - Math.pow(1 - k2, 3);
+        Object.keys(to).forEach(function (k) { inputs[k].value = from[k] + (to[k] - from[k]) * e2; });
+        apply(); if (k2 < 1) requestAnimationFrame(tw);
+      })(performance.now());
+    });
     document.getElementById("fgGame").addEventListener("click", function () { setFg(true); });
     document.getElementById("fgDesk").addEventListener("click", function () { setFg(false); });
     document.addEventListener("keydown", function (e) {
       if (e.altKey && (e.key === "l" || e.key === "L" || e.code === "KeyL")) {
         e.preventDefault();
+        document.querySelectorAll("kbd").forEach(function (k) { k.classList.add("down"); setTimeout(function () { k.classList.remove("down"); }, 160); });
+        var tEl2 = document.getElementById("toast"); if (tEl2) tEl2.classList.remove("show");
         if (!inGame) setFg(true);
         setOpen(!open);
       } else if (e.key === "Escape" && open && inGame) {
@@ -1500,6 +1762,23 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
     // Startwerte, damit der Effekt sofort sichtbar ist
     inputs.g.value = 1.35; inputs.b.value = 0.04; inputs.c.value = 1.08; inputs.w.value = 0.2;
     function redraw() { drawGame(); drawDesk(); }
+    if (!reduce) {
+      var gVis = false, gLast = 0;
+      whenVisible(screen, function (v) { gVis = v; if (v) requestAnimationFrame(loop); });
+      function loop(ts) {
+        if (!gVis || document.hidden) return;
+        if (ts - gLast > 33) { gt += (ts - gLast) / 1000; if (gt > 1e5) gt = 0; gLast = ts; if (inGame) drawGame(); }
+        requestAnimationFrame(loop);
+      }
+      var toastShown = false;
+      whenVisible(screen, function (v) {
+        if (!v || toastShown) return; toastShown = true;
+        var tEl = document.getElementById("toast");
+        if (!tEl || matchMedia("(hover: none)").matches) return;
+        setTimeout(function () { tEl.classList.add("show"); }, 500);
+        setTimeout(function () { tEl.classList.remove("show"); }, 4200);
+      });
+    }
     window.addEventListener("resize", redraw);
     onLang(function () { drawDesk(); apply(); });
     redraw(); apply();
@@ -1566,7 +1845,13 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
       var l = LV[cur];
       var px = l.blur * (after.width / after.getBoundingClientRect().width || 1) / 1;
       after.style.filter = "blur(" + l.blur + "px) saturate(" + (1 - l.flat * 0.35) + ") contrast(" + (1 - l.flat * 0.25) + ")";
-      tag.textContent = lang === "en" ? l.en : l.de;
+      var newTag = lang === "en" ? l.en : l.de;
+      if (tag.textContent !== newTag && !reduce && tag.textContent) {
+        tag.classList.add("swap");
+        setTimeout(function () { tag.textContent = newTag; tag.classList.remove("swap"); }, 150);
+      } else tag.textContent = newTag;
+      var lb = document.getElementById("lodBig");
+      if (lb) { var nb = lang === "en" ? l.bias.replace(",", ".") : l.bias; if (lb.textContent !== nb && !reduce) lb.animate([{ transform: "translateY(-8px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 260, easing: "cubic-bezier(0.23,1,0.32,1)" }); lb.textContent = nb; }
       document.getElementById("levelInfo").textContent = lang === "en" ? l.ien : l.ide;
       Array.prototype.forEach.call(document.querySelectorAll("#levels button"), function (b, i) { b.setAttribute("aria-pressed", String(i === cur)); });
     }
@@ -1640,6 +1925,31 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
       }
     }
     range.addEventListener("input", update); update();
+    var cv = document.getElementById("bloatChart");
+    if (cv) {
+      var cx = cv.getContext("2d"), idle = [], load = [], N2 = 60, shown = +range.value;
+      for (var q = 0; q < N2; q++) { idle.push(18 + Math.random() * 2); load.push(18 + shown + Math.random() * 4); }
+      var vis2 = false, lastT2 = 0, acc = 0;
+      function drawB() {
+        var d = fitCanvas(cv), w = d.w, h = d.h, p = d.dpr;
+        cx.clearRect(0, 0, w, h);
+        var hi = Math.max(80, shown * 1.25 + 40);
+        function y(v) { return h - 4 * p - (v / hi) * (h - 10 * p); }
+        function line(arr, col, wd) { cx.beginPath(); arr.forEach(function (v, i) { var x = i / (N2 - 1) * w; i ? cx.lineTo(x, y(v)) : cx.moveTo(x, y(v)); }); cx.strokeStyle = col; cx.lineWidth = wd * p; cx.lineJoin = "round"; cx.stroke(); }
+        cx.fillStyle = "rgba(0,245,160,0.08)"; cx.beginPath(); load.forEach(function (v, i) { var x = i / (N2 - 1) * w; i ? cx.lineTo(x, y(v)) : cx.moveTo(x, y(v)); }); idle.slice().reverse().forEach(function (v, i) { cx.lineTo((N2 - 1 - i) / (N2 - 1) * w, y(v)); }); cx.closePath(); cx.fill();
+        line(idle, C.muted, 1.5); line(load, C.accent, 2);
+      }
+      function tickB(ts) {
+        if (!vis2) return;
+        var dt = lastT2 ? ts - lastT2 : 16; lastT2 = ts; acc += dt;
+        shown += (+range.value - shown) * Math.min(1, dt / 120);
+        if (acc > 90) { acc = 0; idle.shift(); idle.push(18 + Math.random() * 2); load.shift(); load.push(18 + shown * (0.85 + Math.random() * 0.3) + Math.random() * 3); }
+        drawB(); requestAnimationFrame(tickB);
+      }
+      if (reduce) drawB();
+      else whenVisible(cv, function (v) { vis2 = v; if (v) { lastT2 = 0; requestAnimationFrame(tickB); } });
+      window.addEventListener("resize", drawB);
+    }
   })();
 
   /* ---------- Update-Fortschritt (Darstellung) ---------- */
@@ -1648,15 +1958,17 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
     if (!bar) return;
     var done = false;
     function finish() {
-      bar.style.transform = "scaleX(1)"; pct.textContent = "100%";
+      bar.style.transform = "scaleX(1)"; pct.textContent = "100%"; st.classList.add("done");
       st.querySelector('[data-l="de"]').textContent = "Installiert, starte neu …";
       st.querySelector('[data-l="en"]').textContent = "Installed, restarting …";
     }
     if (reduce) { finish(); return; }
     whenVisible(bar.parentNode, function (v) {
-      if (!v || done) return; done = true;
+      if (!v) { if (done) { done = false; st.classList.remove("done"); bar.style.transform = "scaleX(0)"; pct.textContent = "0%"; st.querySelector('[data-l="de"]').textContent = "Lade herunter …"; st.querySelector('[data-l="en"]').textContent = "Downloading …"; } return; }
+      if (done) return; done = true;
       var t0 = null;
       function f(ts) {
+        if (!done) return;
         if (!t0) t0 = ts;
         var k = Math.min(1, (ts - t0) / 2600), e = 1 - Math.pow(1 - k, 2.2);
         bar.style.transform = "scaleX(" + e + ")"; pct.textContent = Math.round(e * 100) + "%";
@@ -1702,6 +2014,361 @@ RetracBoost.exe --selftest --server --out server.txt</code></pre>
   })();
 
   setLang(initial);
+})();
+</script>
+
+<script>
+/* Motion-Schicht: Springs (Apple: Dämpfung + Response), Figma-Shader „Glowing wave“ als WebGL, Details */
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  var EASE = "cubic-bezier(0.23, 1, 0.32, 1)";
+
+  /* ---------- Spring: response in s, dampingRatio 1 = keine Überschwinger ---------- */
+  function spring(onUpdate, response, ratio, start) {
+    var k = Math.pow(2 * Math.PI / response, 2), c = 4 * Math.PI * ratio / response;
+    var s = { x: start || 0, v: 0, t: start || 0, run: false }, last = 0;
+    function tick(ts) {
+      var dt = Math.min(0.034, (ts - last) / 1000 || 0.016); last = ts;
+      var n = Math.ceil(dt / 0.004), h = dt / n;
+      for (var i = 0; i < n; i++) { var a = -k * (s.x - s.t) - c * s.v; s.v += a * h; s.x += s.v * h; }
+      if (Math.abs(s.v) < 0.002 && Math.abs(s.x - s.t) < 0.002) { s.x = s.t; s.v = 0; s.run = false; onUpdate(s.x); return; }
+      onUpdate(s.x); requestAnimationFrame(tick);
+    }
+    return {
+      to: function (t) { s.t = t; if (!s.run) { s.run = true; last = performance.now(); requestAnimationFrame(tick); } },
+      get value() { return s.x; }
+    };
+  }
+
+  /* ---------- Hero: Figma-Shader „Glowing wave“, nach WebGL portiert, als Ping-Wellen ---------- */
+  (function () {
+    var c = document.getElementById("heroWaves");
+    if (!c || reduce) return;
+    var gl = c.getContext("webgl", { premultipliedAlpha: true, antialias: false, alpha: true });
+    if (!gl) return;
+    var vs = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+    var fs = [
+      "precision highp float;",
+      "uniform vec2 u_res;uniform float u_time;uniform vec2 u_mouse;uniform float u_energy;uniform float u_dpr;",
+      // Abstand zur Welle wie im Figma-Shader: Kern + weicher Schein mit pow(...,0.4)
+      "float band(float d,float hw,float spread,float gi){",
+      "  float core=1.-smoothstep(hw,hw+1.,d);",
+      "  float glow=1.-pow(clamp(d/spread,0.,1.),0.4);",
+      "  return clamp(core+glow*gi,0.,1.);}",
+      "void main(){",
+      "  vec2 px=gl_FragCoord.xy/u_dpr; vec2 res=u_res/u_dpr;",
+      "  float acc=0.;",
+      "  for(int i=0;i<4;i++){",
+      "    float fi=float(i);",
+      "    float wl=res.x*(0.62+0.21*fi);",
+      "    float k=6.2831853/wl;",
+      "    float near=exp(-pow((px.x-u_mouse.x)/(res.x*0.16),2.));",
+      "    float amp=res.y*(0.06+0.025*fi)*(1.+u_energy*1.1*near);",
+      "    float ph=fi*1.7+u_time*(0.32+0.11*fi)*(mod(fi,2.)<.5?1.:-1.);",
+      "    float y=res.y*(0.36+(fi-1.5)*0.075)+amp*sin(k*px.x+ph)+amp*0.3*sin(k*2.7*px.x-ph*1.3);",
+      // Ping-Spitzen laufen entlang der vordersten Welle
+      "    float sp=fract(px.x/res.x*1.4-u_time*0.07+fi*0.31);",
+      "    y+=res.y*0.12*exp(-pow((sp-0.5)*38.,2.))*(i==0?1.:0.35);",
+      "    float d=abs(px.y-y);",
+      "    float w=i==0?1.:0.42-0.08*fi;",
+      "    acc=max(acc,band(d,i==0?1.2:0.8,46.+fi*10.,0.16)*w);",
+      "  }",
+      "  vec3 col=vec3(0.,0.961,0.627);",
+      "  gl_FragColor=vec4(col*acc,acc);",
+      "}"
+    ].join("\n");
+    function sh(t, src) { var o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); return gl.getShaderParameter(o, gl.COMPILE_STATUS) ? o : null; }
+    var v = sh(gl.VERTEX_SHADER, vs), f = sh(gl.FRAGMENT_SHADER, fs);
+    if (!v || !f) return;
+    var pr = gl.createProgram(); gl.attachShader(pr, v); gl.attachShader(pr, f); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+    gl.useProgram(pr);
+    var b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    var loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    var U = { res: gl.getUniformLocation(pr, "u_res"), time: gl.getUniformLocation(pr, "u_time"), mouse: gl.getUniformLocation(pr, "u_mouse"), energy: gl.getUniformLocation(pr, "u_energy"), dpr: gl.getUniformLocation(pr, "u_dpr") };
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.5), W = 0, H = 0;
+    function size() { var r = c.getBoundingClientRect(); W = Math.max(1, Math.round(r.width * dpr)); H = Math.max(1, Math.round(r.height * dpr)); c.width = W; c.height = H; gl.viewport(0, 0, W, H); }
+    size(); window.addEventListener("resize", size);
+    var mx = spring(function () {}, 0.6, 1, 0.5), en = spring(function () {}, 0.5, 1, 0);
+    var hero = c.parentNode;
+    hero.addEventListener("pointermove", function (e) { var r = c.getBoundingClientRect(); mx.to((e.clientX - r.left) / r.width); en.to(1); });
+    hero.addEventListener("pointerleave", function () { en.to(0); });
+    var vis = true, t0 = performance.now(), running = false;
+    function frame(ts) {
+      if (!vis || document.hidden) { running = false; return; }
+      gl.uniform2f(U.res, W, H); gl.uniform1f(U.time, (ts - t0) / 1000); gl.uniform1f(U.dpr, dpr);
+      gl.uniform2f(U.mouse, mx.value * W / dpr, 0); gl.uniform1f(U.energy, en.value);
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 6);
+      requestAnimationFrame(frame);
+    }
+    function go() { if (!running && vis && !document.hidden) { running = true; requestAnimationFrame(frame); } }
+    new IntersectionObserver(function (es) { vis = es[0].isIntersecting; go(); }).observe(c);
+    document.addEventListener("visibilitychange", go);
+    requestAnimationFrame(function () { c.classList.add("on"); go(); });
+  })();
+
+  /* ---------- Buchstaben-Splitter + „Dock“-Anhebung unter dem Zeiger ---------- */
+  function splitChars(el) {
+    var out = [];
+    (function walk(node) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (n) {
+        if (n.nodeType === 3) {
+          var frag = document.createDocumentFragment();
+          n.textContent.split("").forEach(function (ch) {
+            if (ch === " ") { frag.appendChild(document.createTextNode(" ")); return; }
+            var sp = document.createElement("span"); sp.className = el.id === "footMark" ? "fl" : "ch"; sp.textContent = ch; frag.appendChild(sp); out.push(sp);
+          });
+          n.parentNode.replaceChild(frag, n);
+        } else if (n.nodeType === 1) walk(n);
+      });
+    })(el);
+    return out;
+  }
+  function dock(container, letters, lift, radius) {
+    if (reduce || !finePointer) return;
+    var sp = letters.map(function (l) { return spring(function (v) { l.style.transform = "translateY(" + v.toFixed(2) + "px)"; }, 0.42, 0.72, 0); });
+    container.addEventListener("pointermove", function (e) {
+      letters.forEach(function (l, i) {
+        var r = l.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+        var d = Math.sqrt(dx * dx + dy * dy * 0.4);
+        sp[i].to(-lift * Math.exp(-Math.pow(d / radius, 2)));
+      });
+    });
+    container.addEventListener("pointerleave", function () { sp.forEach(function (s) { s.to(0); }); });
+  }
+
+  /* Hero-Titel */
+  (function () {
+    var h1 = document.getElementById("hero-title");
+    if (!h1) return;
+    var chars = splitChars(h1);
+    if (!reduce) {
+      chars.forEach(function (ch, i) {
+        ch.animate([
+          { transform: "translateY(105%) rotate(6deg)", opacity: 0, filter: "blur(10px)" },
+          { transform: "none", opacity: 1, filter: "blur(0)" }
+        ], { duration: 1000, delay: 80 + i * 45, easing: EASE, fill: "backwards" });
+      });
+      var pv = document.getElementById("pingValue"), target = +pv.textContent || 27, t0 = null;
+      (function count(ts) {
+        if (!t0) t0 = ts; var k = Math.min(1, (ts - t0 - 300) / 900);
+        if (k > 0) pv.textContent = Math.round(target * (1 - Math.pow(1 - k, 3)));
+        if (k < 1) requestAnimationFrame(count);
+      })(performance.now());
+    }
+    setTimeout(function () { dock(h1, chars, 14, 90); }, 900);
+  })();
+
+  /* Footer-Wortmarke */
+  (function () {
+    var fm = document.getElementById("footMark");
+    if (!fm) return;
+    var letters = splitChars(fm);
+    dock(fm, letters, 26, 140);
+  })();
+
+  /* ---------- Wort-Reveal für alle h2 ---------- */
+  (function () {
+    document.querySelectorAll("h2:not(.wipe)").forEach(function (h) {
+      h.querySelectorAll("[data-l]").forEach(function (lang) {
+        var i = 0;
+        (function walk(node) {
+          Array.prototype.slice.call(node.childNodes).forEach(function (n) {
+            if (n.nodeType === 3) {
+              var frag = document.createDocumentFragment();
+              n.textContent.split(/(\s+)/).forEach(function (part) {
+                if (!part) return;
+                if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+                var w = document.createElement("span"); w.className = "sw";
+                var inner = document.createElement("i"); inner.textContent = part; inner.style.setProperty("--i", i++);
+                w.appendChild(inner); frag.appendChild(w);
+              });
+              n.parentNode.replaceChild(frag, n);
+            } else if (n.nodeType === 1) walk(n);
+          });
+        })(lang);
+      });
+      h.classList.add("split");
+    });
+  })();
+
+  /* ---------- Magnet-Buttons ---------- */
+  if (finePointer && !reduce) {
+    document.querySelectorAll(".mag").forEach(function (el) {
+      var x = spring(function () { apply(); }, 0.35, 0.65, 0), y = spring(function () { apply(); }, 0.35, 0.65, 0);
+      function apply() { el.style.transform = "translate(" + x.value.toFixed(2) + "px," + y.value.toFixed(2) + "px)"; }
+      el.addEventListener("pointermove", function (e) {
+        var r = el.getBoundingClientRect();
+        x.to(Math.max(-8, Math.min(8, (e.clientX - r.left - r.width / 2) * 0.22)));
+        y.to(Math.max(-6, Math.min(6, (e.clientY - r.top - r.height / 2) * 0.3)));
+      });
+      el.addEventListener("pointerleave", function () { x.to(0); y.to(0); });
+    });
+  }
+
+  /* ---------- 3D-Neigung des Hero-Panels ---------- */
+  (function () {
+    var card = document.getElementById("tiltCard"), zone = document.getElementById("heroPanel");
+    if (!card || !zone || reduce || !finePointer) return;
+    var rx = spring(apply, 0.5, 0.8, 0), ry = spring(apply, 0.5, 0.8, 0);
+    function apply() { card.style.transform = "rotateX(" + rx.value.toFixed(3) + "deg) rotateY(" + ry.value.toFixed(3) + "deg)"; }
+    zone.addEventListener("pointermove", function (e) {
+      var r = card.getBoundingClientRect(), px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+      ry.to((px - 0.5) * 9); rx.to((0.5 - py) * 7);
+      card.style.setProperty("--sx", (px * 100).toFixed(1) + "%"); card.style.setProperty("--sy", (py * 100).toFixed(1) + "%");
+    });
+    zone.addEventListener("pointerleave", function () { rx.to(0); ry.to(0); });
+  })();
+
+  /* ---------- Spotlight ---------- */
+  if (finePointer) {
+    document.addEventListener("pointermove", function (e) {
+      var el = e.target.closest && e.target.closest(".spot");
+      if (!el) return;
+      var r = el.getBoundingClientRect();
+      el.style.setProperty("--mx", (e.clientX - r.left) + "px"); el.style.setProperty("--my", (e.clientY - r.top) + "px");
+    }, { passive: true });
+  }
+
+  /* ---------- Nav: ein-/ausblenden, aktiver Abschnitt, Fortschritt ---------- */
+  (function () {
+    var nav = document.querySelector(".nav"), bar = document.getElementById("scrollBar"), toTop = document.getElementById("toTop");
+    var ul = document.getElementById("navLinks"), ind = ul && ul.querySelector(".nav-ind");
+    var links = ul ? Array.prototype.slice.call(ul.querySelectorAll("a")) : [];
+    var lastY = scrollY, ticking = false;
+    function onScroll() {
+      var y = scrollY, max = document.documentElement.scrollHeight - innerHeight;
+      bar.style.transform = "scaleX(" + (max > 0 ? Math.min(1, y / max) : 0).toFixed(4) + ")";
+      if (!reduce) {
+        if (y > 320 && y > lastY + 6) nav.classList.add("hide");
+        else if (y < lastY - 6 || y < 320) nav.classList.remove("hide");
+      }
+      toTop.classList.toggle("show", y > 1200);
+      lastY = y; ticking = false;
+    }
+    addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+    onScroll();
+    function moveInd(a) {
+      if (!ind) return;
+      if (!a) { ind.style.opacity = "0"; return; }
+      var r = a.getBoundingClientRect(), ur = ul.getBoundingClientRect();
+      ind.style.opacity = "1";
+      ind.style.transform = "translateX(" + (r.left - ur.left) + "px) scaleX(" + r.width + ")";
+    }
+    var current = null;
+    var map = {};
+    links.forEach(function (a) { var id = a.getAttribute("href").slice(1); var sec = document.getElementById(id); if (sec) map[id] = a; });
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { current = map[e.target.id] || null; } });
+      links.forEach(function (a) { a.classList.toggle("active", a === current); });
+      moveInd(current);
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    Object.keys(map).forEach(function (id) { io.observe(document.getElementById(id)); });
+    addEventListener("resize", function () { moveInd(current); });
+  })();
+
+  /* ---------- Ticker: Grundtempo + Scroll-Geschwindigkeit ---------- */
+  (function () {
+    var track = document.getElementById("tickerTrack");
+    if (!track || reduce) return;
+    var x = 0, boost = spring(function () {}, 0.6, 1, 0), lastY = scrollY, last = 0, vis = true;
+    addEventListener("scroll", function () { var d = scrollY - lastY; lastY = scrollY; boost.to(Math.max(-6, Math.min(6, d * 0.35))); clearTimeout(track._t); track._t = setTimeout(function () { boost.to(0); }, 120); }, { passive: true });
+    new IntersectionObserver(function (es) { vis = es[0].isIntersecting; if (vis) requestAnimationFrame(f); }).observe(track);
+    function f(ts) {
+      if (!vis) return;
+      var dt = last ? Math.min(50, ts - last) : 16; last = ts;
+      var half = track.scrollWidth / 2;
+      x -= (0.055 * dt) * (1 + Math.abs(boost.value)) * (boost.value < -0.5 ? -1 : 1);
+      if (x <= -half) x += half; if (x > 0) x -= half;
+      track.style.transform = "translate3d(" + x.toFixed(2) + "px,0,0)";
+      requestAnimationFrame(f);
+    }
+  })();
+
+  /* ---------- Entschlüsseln-Effekt für technische Werte ---------- */
+  (function () {
+    var els = document.querySelectorAll("[data-scramble]");
+    if (reduce || !els.length) return;
+    var glyphs = "0123456789abcdef:.-/\\";
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return; io.unobserve(e.target);
+        var el = e.target, final = el.textContent, t0 = null;
+        (function f(ts) {
+          if (!t0) t0 = ts; var k = Math.min(1, (ts - t0) / 900), n = Math.floor(final.length * k);
+          var out = final.slice(0, n);
+          for (var i = n; i < final.length; i++) out += final[i] === " " ? " " : glyphs[(Math.random() * glyphs.length) | 0];
+          el.textContent = out;
+          if (k < 1) requestAnimationFrame(f); else el.textContent = final;
+        })(performance.now());
+      });
+    }, { rootMargin: "0px 0px -10% 0px" });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+
+  /* ---------- Grüne Fläche öffnet sich beim Scrollen ---------- */
+  (function () {
+    var field = document.querySelector(".field");
+    if (!field || reduce || !("clipPath" in document.body.style)) return;
+    var ticking = false;
+    function up() {
+      var r = field.getBoundingClientRect(), vh = innerHeight;
+      var p = Math.max(0, Math.min(1, (vh - r.top) / (vh * 0.7)));
+      var e = 1 - Math.pow(1 - p, 3);
+      field.style.clipPath = "inset(" + ((1 - e) * 7).toFixed(2) + "% " + ((1 - e) * 5).toFixed(2) + "% round " + ((1 - e) * 40).toFixed(1) + "px)";
+      ticking = false;
+    }
+    addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(up); } }, { passive: true });
+    up();
+  })();
+
+  /* ---------- FAQ: weiches Auf- und Zuklappen ---------- */
+  (function () {
+    document.querySelectorAll(".faq-list details").forEach(function (d) {
+      var sum = d.querySelector("summary"), body = d.querySelector(".a"), anim = null;
+      sum.addEventListener("click", function (e) {
+        if (reduce) return;
+        e.preventDefault();
+        if (anim) anim.cancel();
+        if (!d.open) {
+          d.open = true;
+          var h = body.scrollHeight;
+          anim = body.animate([{ height: "0px", opacity: 0 }, { height: h + "px", opacity: 1 }], { duration: 300, easing: "cubic-bezier(0.32, 0.72, 0, 1)" });
+          anim.onfinish = function () { anim = null; };
+        } else {
+          var h2 = body.offsetHeight;
+          anim = body.animate([{ height: h2 + "px", opacity: 1 }, { height: "0px", opacity: 0 }], { duration: 220, easing: EASE });
+          anim.onfinish = function () { d.open = false; anim = null; };
+        }
+      });
+    });
+  })();
+
+  /* ---------- Code kopieren ---------- */
+  (function () {
+    var btn = document.getElementById("copyBtn"), code = document.getElementById("codeText");
+    if (!btn || !code) return;
+    btn.addEventListener("click", function () {
+      var text = code.innerText;
+      function ok() { btn.classList.add("done"); clearTimeout(btn._t); btn._t = setTimeout(function () { btn.classList.remove("done"); }, 1600); }
+      function fallback() { var r = document.createRange(); r.selectNodeContents(code); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+      try { navigator.clipboard.writeText(text).then(ok, fallback); } catch (e) { fallback(); }
+    });
+  })();
+
+  /* ---------- Sprachwechsel: weiche Überblendung ---------- */
+  document.querySelectorAll("[data-set-lang]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (reduce) return;
+      document.querySelectorAll("main, footer").forEach(function (el) {
+        el.animate([{ opacity: 0.35, filter: "blur(3px)" }, { opacity: 1, filter: "blur(0)" }], { duration: 300, easing: EASE });
+      });
+    });
+  });
 })();
 </script>
 </body>
