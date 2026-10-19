@@ -1,5 +1,5 @@
 {
   "version": "1.0.2",
   "url": "https://github.com/muzikadritri/RetracBoost/releases/download/v1.0.2/RetracBoost.exe",
-  "changelog": "• Server-Lock: alle EU-Standorte außer Frankfurt gesperrt (inkl. Zürich, IPv6, alle AWS-Dienste) + Match-Server-Wächter\n• Ping-Booster: UDP-Bündelung (URO) aus, mehr Netzwerkkarten-Optionen (Interrupt-Delays, Energiesparen, WLAN-Roaming, RSS)\n• FPS-Booster: Hochleistungs-GPU fürs Spiel, Flip-Modell im Fenster, Multithreaded Rendering, RAM-Wächter, Ultimative Leistung am Desktop\n• Potato-Grafik: Einstellungen gesperrt, Nebel aus, Fehler beim Zurücksetzen behoben"
+  "changelog": "Server-Lock: nur noch Frankfurt, auch Zürich und IPv6 gesperrt\nPing: UDP-Bündelung aus, mehr Netzwerkkarten-Einstellungen\nFPS: Spiel auf der Grafikkarte, Multithreaded Rendering, RAM-Wächter\nPotato: Werte bleiben gesetzt, Nebel aus\nUpdate-Knopf wieder lesbar"
 }

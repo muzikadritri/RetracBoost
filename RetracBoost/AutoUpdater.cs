@@ -86,7 +86,7 @@ namespace RetracBoost
                 CurrentVersion = CurrentVersion,
                 LatestVersion = CurrentVersion,
                 HasUpdate = false,
-                Changelog = "Keine neuen Updates verfügbar. Dein Retrac Boost ist auf dem neuesten Stand.",
+                Changelog = "Kein Update verfügbar.",
                 StatusMessage = "Aktuell"
             };
 
@@ -142,6 +142,8 @@ namespace RetracBoost
                                     .Replace("\\n", "\n")
                                     .Replace("\\\"", "\"")
                                     .Replace("\\\\", "\\");
+                                // Markdown-Zeichen entfernen - das Fenster zeigt nur reinen Text
+                                body = Regex.Replace(body, @"^#+\s*", "", RegexOptions.Multiline).Replace("**", "").Replace("`", "").Trim();
                                 if (!string.IsNullOrWhiteSpace(body))
                                     info.Changelog = body;
                             }
@@ -179,7 +181,7 @@ namespace RetracBoost
                                     string remoteVer = tag.TrimStart('v', 'V');
                                     info.LatestVersion = remoteVer;
                                     info.DownloadUrl = "https://github.com/" + repo + "/releases/latest/download/RetracBoost.exe";
-                                    info.Changelog = "Neues Release auf GitHub: " + tag;
+                                    info.Changelog = "Neue Version: " + tag;
 
                                     if (IsNewer(remoteVer, CurrentVersion))
                                     {

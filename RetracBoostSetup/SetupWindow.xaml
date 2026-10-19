@@ -388,11 +388,11 @@
                                 <Border CornerRadius="6" Background="{StaticResource AccentSoft}" BorderBrush="{StaticResource Accent}" BorderThickness="1" Padding="7,2" Margin="10,0,0,0" VerticalAlignment="Center">
                                     <StackPanel Orientation="Horizontal">
                                         <Ellipse Width="6" Height="6" Fill="{StaticResource Accent}" Margin="0,0,5,0" Style="{StaticResource PulsingDot}"/>
-                                        <TextBlock x:Name="BadgeText" Text="FULL CUSTOM SETUP" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource Accent}"/>
+                                        <TextBlock x:Name="BadgeText" Text="SETUP" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource Accent}"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
-                            <TextBlock x:Name="HeaderSub" Text="Ping-Booster · Unsichtbarer FPS-Booster · Frankfurt Server-Lock · Potato-Grafik"
+                            <TextBlock x:Name="HeaderSub" Text="Ping · FPS · Server-Lock · Potato-Grafik"
                                        FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
                         </StackPanel>
                     </StackPanel>
@@ -426,7 +426,7 @@
                             Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock x:Name="StepNum2" Text="2" FontWeight="Bold" Foreground="{StaticResource Muted}" Margin="0,0,8,0"/>
-                            <TextBlock x:Name="StepLbl2" Text="Custom Boost &amp; Grafik" FontWeight="SemiBold" Foreground="{StaticResource Muted}" FontSize="12"/>
+                            <TextBlock x:Name="StepLbl2" Text="Boost &amp; Grafik" FontWeight="SemiBold" Foreground="{StaticResource Muted}" FontSize="12"/>
                         </StackPanel>
                     </Border>
 
@@ -448,7 +448,7 @@
                     <StackPanel>
                         <TextBlock x:Name="S1Title" Text="Wohin soll Retrac Boost installiert werden?"
                                    FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
-                        <TextBlock x:Name="S1Desc" Text="Wähle den Zielordner und lege fest, welche Verknüpfungen und Automatik-Funktionen eingerichtet werden sollen."
+                        <TextBlock x:Name="S1Desc" Text="Zielordner, Verknüpfungen und Autostart."
                                    FontSize="12" Foreground="{StaticResource Muted}" Margin="0,3,0,14"/>
 
                         <!-- Zielordner-Karte -->
@@ -483,7 +483,7 @@
                                     </Grid.ColumnDefinitions>
                                     <StackPanel>
                                         <TextBlock x:Name="LblDesktop" Text="Desktop-Verknüpfung erstellen" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
-                                        <TextBlock x:Name="DescDesktop" Text="Legt „Retrac Boost“ direkt auf deinem Desktop ab" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                        <TextBlock x:Name="DescDesktop" Text="Symbol auf dem Desktop" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                     <CheckBox x:Name="ChkDesktop" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
                                 </Grid>
@@ -510,8 +510,8 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel>
-                                        <TextBlock x:Name="LblAutoBoost" Text="Auto-Boost &amp; RAM-Clean beim Spielstart" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
-                                        <TextBlock x:Name="DescAutoBoost" Text="Aktiviert Ping-/FPS-Boost und leert die Windows-RAM-Standby-Liste automatisch bei Spielstart" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                        <TextBlock x:Name="LblAutoBoost" Text="Auto-Boost beim Spielstart" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                        <TextBlock x:Name="DescAutoBoost" Text="Schaltet Ping- und FPS-Boost ein, sobald das Spiel startet, und leert den Standby-RAM" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                     <CheckBox x:Name="ChkAutoBoost" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
                                 </Grid>
@@ -524,8 +524,8 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel>
-                                        <TextBlock x:Name="LblAutoStart" Text="Mit Windows automatisch im Hintergrund starten" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
-                                        <TextBlock x:Name="DescAutoStart" Text="Startet Retrac Boost minimiert beim PC-Start, damit du nie daran denken musst" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                        <TextBlock x:Name="LblAutoStart" Text="Mit Windows starten" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                        <TextBlock x:Name="DescAutoStart" Text="Startet minimiert bei der Anmeldung" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                     <CheckBox x:Name="ChkAutoStart" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="False" VerticalAlignment="Center"/>
                                 </Grid>
@@ -544,9 +544,9 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock x:Name="S2Title" Text="Stelle dein eigenes Custom-Setup zusammen"
+                                <TextBlock x:Name="S2Title" Text="Was soll eingerichtet werden?"
                                            FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
-                                <TextBlock x:Name="S2Desc" Text="Wähle ein Schnellprofil oder bestimme jeden Booster und die Potato-Grafik-Stufe selbst."
+                                <TextBlock x:Name="S2Desc" Text="Schnellprofil wählen oder jeden Punkt einzeln festlegen."
                                            FontSize="12" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
                             </StackPanel>
                         </Grid>
@@ -568,8 +568,8 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Margin="0,0,12,0">
-                                        <TextBlock x:Name="LblPingBoost" Text="Ping- &amp; Netzwerk-Booster (100% aktiv)" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
-                                        <TextBlock x:Name="DescPingBoost" Text="Nagle aus (TcpNoDelay), AFD-Fast-Datagram (1500 B), Netzwerk-Drosselung aus, QoS DSCP 46, Netzwerkkarte Interrupt-Moderation &amp; Stromsparen aus"
+                                        <TextBlock x:Name="LblPingBoost" Text="Ping-Booster" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                        <TextBlock x:Name="DescPingBoost" Text="Netzwerk-Stack, Netzwerkkarte (Interrupt-Moderation und Energiesparen aus), UDP-Bündelung aus, QoS-Priorität fürs Spiel"
                                                    FontSize="11.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"/>
                                     </StackPanel>
                                     <CheckBox x:Name="ChkPingBoost" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
@@ -583,8 +583,8 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Margin="0,0,12,0">
-                                        <TextBlock x:Name="LblFpsBoost" Text="Unsichtbarer FPS-Booster &amp; Höchstleistung" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
-                                        <TextBlock x:Name="DescFpsBoost" Text="NVIDIA Max Performance, Low Latency Mode On, Threaded Optimization, Win32PrioritySeparation 0x26, HAGS, DWM-Latenz, Shader-Cache &amp; RAM-Purge"
+                                        <TextBlock x:Name="LblFpsBoost" Text="FPS-Booster &amp; Energiesparplan" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                        <TextBlock x:Name="DescFpsBoost" Text="NVIDIA-Profil, Windows-Scheduler, starke Grafikkarte fürs Spiel, Shader-Cache, RAM-Wächter, Höchstleistung"
                                                    FontSize="11.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"/>
                                     </StackPanel>
                                     <CheckBox x:Name="ChkFpsBoost" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
@@ -598,8 +598,8 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Margin="0,0,12,0">
-                                        <TextBlock x:Name="LblRetracPack" Text="Retrac / Fortnite Latenz- &amp; Input-Paket" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
-                                        <TextBlock x:Name="DescRetracPack" Text="CPU-/I/O-/RAM-Priorität Hoch, Vollbild-Optimierungen aus, Spielmodus an &amp; Xbox-DVR aus, 1:1 lineare Maus, Engine OneFrameThreadLag=0"
+                                        <TextBlock x:Name="LblRetracPack" Text="Retrac: Priorität &amp; Eingabe" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                        <TextBlock x:Name="DescRetracPack" Text="Hohe Priorität fürs Spiel, Vollbild-Optimierung aus, Spielmodus an, Xbox-Aufnahme aus, Mausbeschleunigung aus"
                                                    FontSize="11.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"/>
                                     </StackPanel>
                                     <CheckBox x:Name="ChkRetracPack" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
@@ -619,7 +619,7 @@
                                                 <TextBlock Text="100% ROUTING" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource Accent}"/>
                                             </Border>
                                         </StackPanel>
-                                        <TextBlock x:Name="DescServerLock" Text="Sperrt alle anderen EU-Standorte (London, Irland, Paris, Stockholm, Mailand, Spanien, Zürich) in der Windows-Firewall – nur für das Spiel. Fremde Match-Server werden zusätzlich gelernt und gesperrt."
+                                        <TextBlock x:Name="DescServerLock" Text="Sperrt in der Firewall alle EU-Standorte außer Frankfurt, nur für das Spiel. Match-Server, die nicht in Frankfurt stehen, werden nach dem Match gesperrt."
                                                    FontSize="11.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"/>
                                     </StackPanel>
                                     <CheckBox x:Name="ChkServerLock" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
@@ -636,10 +636,10 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel>
-                                        <TextBlock x:Name="LblPotatoHeader" Text="Potato-Grafik Stufe (wie EM Tweaks · inkl. Anti-Berg-Bug-Fix)"
+                                        <TextBlock x:Name="LblPotatoHeader" Text="Potato-Grafik"
                                                    FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
                                         <TextBlock x:Name="PotatoSelectedInfo"
-                                                   Text="Mittel (+1,25 · EM Tweaks): Glatte Potato-Texturen, keine Schatten/Gras/Bloom, 100% feste Berge &amp; Klippen (Texturen Hoch + Sichtweite Weit)"
+                                                   Text="Mittel (+1,5): typischer Potato-Look, Berge bleiben rund."
                                                    FontSize="11.5" Foreground="{StaticResource Accent}" TextWrapping="Wrap" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </Grid>
@@ -654,31 +654,31 @@
                                     <RadioButton x:Name="RadPotStealth" GroupName="PotatoGrp" Style="{StaticResource PotatoCard}" Checked="PotatoRadio_Checked" Tag="stealth">
                                         <StackPanel HorizontalAlignment="Center">
                                             <TextBlock Text="Dezent (+0,375)" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Scharf · Nur Effekte aus" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Nur Effekte aus" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </RadioButton>
                                     <RadioButton x:Name="RadPotClean" GroupName="PotatoGrp" Style="{StaticResource PotatoCard}" Checked="PotatoRadio_Checked" Tag="clean">
                                         <StackPanel HorizontalAlignment="Center">
                                             <TextBlock Text="Leicht (+1,0)" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Clean Potato · Kein Glitch" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Glattere Texturen" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </RadioButton>
                                     <RadioButton x:Name="RadPotMedium" GroupName="PotatoGrp" Style="{StaticResource PotatoCard}" IsChecked="True" Checked="PotatoRadio_Checked" Tag="medium">
                                         <StackPanel HorizontalAlignment="Center">
-                                            <TextBlock Text="Mittel (+1,5 · EM)" FontWeight="SemiBold" FontSize="12" Foreground="{StaticResource Accent}" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="EM Tweaks · Feste Berge" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Mittel (+1,5)" FontWeight="SemiBold" FontSize="12" Foreground="{StaticResource Accent}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Typischer Potato-Look" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </RadioButton>
                                     <RadioButton x:Name="RadPotStrong" GroupName="PotatoGrp" Style="{StaticResource PotatoCard}" Checked="PotatoRadio_Checked" Tag="strong">
                                         <StackPanel HorizontalAlignment="Center">
-                                            <TextBlock Text="Stark (+3,0 · Clay)" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Runde Berge · Starker Clay" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Stark (+3,0)" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Kaum Texturen" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </RadioButton>
                                     <RadioButton x:Name="RadPotUltra" GroupName="PotatoGrp" Style="{StaticResource PotatoCard}" Checked="PotatoRadio_Checked" Tag="ultra">
                                         <StackPanel HorizontalAlignment="Center">
-                                            <TextBlock Text="Extrem (0x78 · 100% Clay)" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="100% Texturen weg (@Austvns)" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Extrem (+15)" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Keine Texturen" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </RadioButton>
                                 </UniformGrid>
@@ -752,8 +752,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock x:Name="FinishTitle" Text="Retrac Boost wurde erfolgreich eingerichtet!" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
-                                <TextBlock x:Name="FinishSub" Text="Retrac Boost direkt beim Schließen des Setups starten" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                <TextBlock x:Name="FinishTitle" Text="Retrac Boost ist installiert" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                <TextBlock x:Name="FinishSub" Text="Retrac Boost nach dem Schließen starten" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
                             </StackPanel>
                             <CheckBox x:Name="ChkLaunchNow" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
                         </Grid>
@@ -764,7 +764,7 @@
                 <StackPanel x:Name="PageUninstall" Visibility="Collapsed">
                     <TextBlock x:Name="UninstTitle" Text="Retrac Boost deinstallieren"
                                FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
-                    <TextBlock x:Name="UninstDesc" Text="Wähle aus, ob vor dem Entfernen auch alle vorgenommenen Netzwerk-, FPS- und Potato-Grafik-Tweaks auf den Windows-Standard zurückgesetzt werden sollen."
+                    <TextBlock x:Name="UninstDesc" Text="Vor dem Entfernen kann alles zurückgesetzt werden, was Retrac Boost geändert hat."
                                FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,16"/>
 
                     <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="11" Padding="16,8" Margin="0,0,0,14">
@@ -775,7 +775,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Margin="0,0,12,0">
-                                    <TextBlock Text="Alle aktiven Tweaks auf Windows-Standard zurücksetzen" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                    <TextBlock Text="Alle Änderungen zurücksetzen" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
                                     <TextBlock Text="Stellt Originalwerte in Registry, NVIDIA-Treiberprofil, Engine.ini und GameUserSettings.ini wieder her"
                                                FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
                                 </StackPanel>
@@ -789,7 +789,7 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Margin="0,0,12,0">
                                     <TextBlock Text="Gespeicherte Einstellungen &amp; Sicherungen löschen" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
-                                    <TextBlock Text="Entfernt auch den Ordner C:\ProgramData\RetracBoost vollständig"
+                                    <TextBlock Text="Löscht auch C:\ProgramData\RetracBoost"
                                                FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
                                 </StackPanel>
                                 <CheckBox x:Name="ChkUninstPurgeData" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>

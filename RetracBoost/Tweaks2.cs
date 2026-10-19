@@ -1283,13 +1283,13 @@ namespace RetracBoost
         }
 
         public override string Id { get { return "fpsboost"; } }
-        public override string Title { get { return L.T("FPS-Booster (High-End)", "FPS booster (High-End)"); } }
+        public override string Title { get { return L.T("FPS-Booster", "FPS booster"); } }
         public override string Summary
         {
             get
             {
-                return L.T("0-Lag CPU/GPU-Sync, Multi-Core-Rendering, Hochleistungs-GPU, Flip-Modell, 100 % CPU-Gaming-Fokus, Low-Latency & RAM-Wächter",
-                           "0-lag CPU/GPU sync, multi-core rendering, high-performance GPU, flip model, 100% CPU gaming focus, low latency & RAM guard");
+                return L.T("NVIDIA-Profil, Windows-Scheduler, starke Grafikkarte fürs Spiel, Multithreaded Rendering, weniger Eingabeverzögerung, RAM-Wächter",
+                           "NVIDIA profile, Windows scheduler, dedicated GPU for the game, multithreaded rendering, less input lag, RAM guard");
             }
         }
         public override bool WeApplied
@@ -1829,11 +1829,11 @@ namespace RetracBoost
                     new PotatoPreset
                     {
                         Key = "stealth",
-                        Name = L.T("Dezent (Kaum sichtbar)", "Subtle (Barely visible)"),
+                        Name = L.T("Dezent", "Subtle"),
                         ActionLabel = L.T("Stufe: Dezent", "Level: Subtle"),
                         LodLabel = L.T("+0,375", "+0.375"),
-                        Info = L.T("Scharfe Texturen & normale Hügel · Schaltet nur Schatten, Gras, Bloom, AO & Nachbearbeitung für hohe FPS aus",
-                                   "Sharp textures & normal hills · Only turns off shadows, grass, bloom, AO & post-processing for high FPS"),
+                        Info = L.T("Texturen bleiben scharf. Aus: Schatten, Gras, Bloom, Umgebungsverdeckung, Nachbearbeitung",
+                                   "Textures stay sharp. Off: shadows, grass, bloom, ambient occlusion, post-processing"),
                         ReplayModeHex = 0x00000000u,
                         DxLodBiasHex = 0x00000003u,
                         MipBias = "0",
@@ -1842,11 +1842,11 @@ namespace RetracBoost
                     new PotatoPreset
                     {
                         Key = "clean",
-                        Name = L.T("Leicht (Clean)", "Light (Clean)"),
+                        Name = L.T("Leicht", "Light"),
                         ActionLabel = L.T("Stufe: Leicht", "Level: Light"),
                         LodLabel = L.T("+1,0", "+1.0"),
-                        Info = L.T("LOD Bias +1,0 · Glatte Potato-Texturen, 100% normale Berge & Kanten ohne Boden-Glitch",
-                                   "LOD Bias +1.0 · Smooth potato textures, 100% normal hills & edges without ground glitch"),
+                        Info = L.T("LOD-Bias +1,0. Glattere Texturen, Hügel und Kanten bleiben normal",
+                                   "LOD bias +1.0. Smoother textures, hills and edges stay normal"),
                         ReplayModeHex = 0x00000008u,
                         DxLodBiasHex = 0x00000008u,
                         MipBias = "1",
@@ -1855,11 +1855,11 @@ namespace RetracBoost
                     new PotatoPreset
                     {
                         Key = "medium",
-                        Name = L.T("Mittel (EM Tweaks)", "Medium (EM Tweaks)"),
+                        Name = L.T("Mittel", "Medium"),
                         ActionLabel = L.T("Stufe: Mittel", "Level: Medium"),
                         LodLabel = L.T("+1,5", "+1.5"),
-                        Info = L.T("LOD Bias +1,5 · Replay Mode All · Klassischer EM-Potato-Look ohne Berg-/Boden-Bug (Texturen Hoch + Sichtweite Weit)",
-                                   "LOD Bias +1.5 · Replay Mode All · Classic EM potato look without hill/ground bug (Textures High + View Distance Far)"),
+                        Info = L.T("LOD-Bias +1,5. Typischer Potato-Look, Berge bleiben rund",
+                                   "LOD bias +1.5. Typical potato look, hills stay round"),
                         ReplayModeHex = 0x00000008u,
                         DxLodBiasHex = 0x0000000Cu,
                         MipBias = "2",
@@ -1868,11 +1868,11 @@ namespace RetracBoost
                     new PotatoPreset
                     {
                         Key = "strong",
-                        Name = L.T("Stark (Potato)", "Strong (Potato)"),
+                        Name = L.T("Stark", "Strong"),
                         ActionLabel = L.T("Stufe: Stark", "Level: Strong"),
-                        LodLabel = L.T("+3,0 Clay", "+3.0 Clay"),
-                        Info = L.T("LOD Bias +3,0 (0x18) · Starker Clay-Look bei stabilen runden Bergen",
-                                   "LOD Bias +3.0 (0x18) · Strong clay look with stable round hills"),
+                        LodLabel = L.T("+3,0", "+3.0"),
+                        Info = L.T("LOD-Bias +3,0. Kaum noch Texturen, Berge bleiben rund",
+                                   "LOD bias +3.0. Barely any textures left, hills stay round"),
                         ReplayModeHex = 0x00000008u,
                         DxLodBiasHex = 0x00000018u,
                         MipBias = "10",
@@ -1881,11 +1881,11 @@ namespace RetracBoost
                     new PotatoPreset
                     {
                         Key = "ultra",
-                        Name = L.T("Extrem (100% Clay @Austvns)", "Extreme (100% Clay @Austvns)"),
+                        Name = L.T("Extrem", "Extreme"),
                         ActionLabel = L.T("Stufe: Extrem", "Level: Extreme"),
-                        LodLabel = L.T("0x78 Clay", "0x78 Clay"),
-                        Info = L.T("LOD Bias 0x00000078 (+15,0) · 100% alle Texturen entfernt (reiner Plastik/Clay-Look wie im @Austvns-Video)",
-                                   "LOD Bias 0x00000078 (+15.0) · 100% all textures removed (pure plastic/clay look like in @Austvns video)"),
+                        LodLabel = L.T("+15", "+15"),
+                        Info = L.T("LOD-Bias +15. Keine Texturen mehr, alles sieht aus wie Knete",
+                                   "LOD bias +15. No textures left, everything looks like clay"),
                         ReplayModeHex = 0x00000008u,
                         DxLodBiasHex = 0x00000078u,
                         MipBias = "15",
@@ -1921,7 +1921,7 @@ namespace RetracBoost
         }
 
         public override string Id { get { return "potato"; } }
-        public override string Title { get { return L.T("Potato-Grafik (wie EM Tweaks)", "Potato graphics (like EM Tweaks)"); } }
+        public override string Title { get { return L.T("Potato-Grafik", "Potato graphics"); } }
         public override string Summary
         {
             get
@@ -1929,10 +1929,10 @@ namespace RetracBoost
                 var p = CurrentPreset;
                 bool nv = UseNvidiaDrs && NvDrs.IsAvailable();
                 return nv
-                    ? L.T("NVIDIA LOD Bias " + p.LodLabel + " + EM-Tweaks Clay/Potato-Grafik · Einstellungen gesperrt · kostenlos",
-                          "NVIDIA LOD Bias " + p.LodLabel + " + EM Tweaks clay/potato graphics · settings locked · free")
-                    : L.T("Engine-LOD-Bias (" + p.LodLabel + ") + minimale Schatten, Effekte und Texturen · Einstellungen gesperrt · kostenlos",
-                          "Engine LOD bias (" + p.LodLabel + ") + minimal shadows, effects and textures · settings locked · free");
+                    ? L.T("NVIDIA LOD-Bias " + p.LodLabel + ", Schatten, Effekte und Gras aus · Spieleinstellungen gesperrt",
+                          "NVIDIA LOD bias " + p.LodLabel + ", shadows, effects and grass off · game settings locked")
+                    : L.T("LOD-Bias " + p.LodLabel + ", Schatten, Effekte und Gras aus · Spieleinstellungen gesperrt",
+                          "LOD bias " + p.LodLabel + ", shadows, effects and grass off · game settings locked");
             }
         }
         public override bool Relevant

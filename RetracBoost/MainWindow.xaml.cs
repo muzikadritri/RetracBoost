@@ -347,8 +347,8 @@ namespace RetracBoost
 
                 if (!silent)
                 {
-                    ModalStatusHeader.Text = "Prüfe auf Updates...";
-                    ModalChangelog.Text = "Verbinde mit GitHub Releases (" + AutoUpdater.ResolveGitHubRepo() + ")...";
+                    ModalStatusHeader.Text = "Suche nach Updates …";
+                    ModalChangelog.Text = "Frage github.com/" + AutoUpdater.ResolveGitHubRepo() + " ab …";
                     ModalCheckBtn.IsEnabled = false;
                 }
 
@@ -362,12 +362,10 @@ namespace RetracBoost
                 {
                     UpdateBadgeText.Text = "Update verfügbar (v" + info.LatestVersion + ")";
                     UpdateDot.Fill = new SolidColorBrush(Color.FromRgb(0xF2, 0xB8, 0x4B)); // Warn
-                    ModalStatusHeader.Text = "Neues Update verfügbar! (v" + info.LatestVersion + ")";
-                    ModalChangelog.Text = string.IsNullOrEmpty(info.Changelog) ? "Verbesserungen und Stabilitätsupdates." : info.Changelog;
-                    ModalActionBtn.Content = "🚀 Jetzt aktualisieren (v" + info.LatestVersion + ")";
-                    ModalActionBtn.Background = (Brush)FindResource("Accent");
-                    ModalActionBtn.Foreground = (Brush)FindResource("AccentInk");
-                    ModalActionBtn.BorderBrush = (Brush)FindResource("Accent");
+                    ModalStatusHeader.Text = "Version " + info.LatestVersion + " ist da";
+                    ModalChangelog.Text = string.IsNullOrEmpty(info.Changelog) ? "Keine Beschreibung." : info.Changelog;
+                    ModalActionBtn.Content = "Auf v" + info.LatestVersion + " aktualisieren";
+                    ModalActionBtn.Style = (Style)FindResource("Primary");
                     ModalActionBtn.Click -= UpdateClose_Click;
                     ModalActionBtn.Click -= StartUpdateInstall_Click;
                     ModalActionBtn.Click += StartUpdateInstall_Click;
@@ -376,14 +374,11 @@ namespace RetracBoost
                 {
                     UpdateBadgeText.Text = "Aktuell (v" + AutoUpdater.CurrentVersion + ")";
                     UpdateDot.Fill = new SolidColorBrush(Color.FromRgb(0x3D, 0xDC, 0x97)); // Accent
-                    ModalStatusHeader.Text = "Du bist auf dem neuesten Stand!";
-                    ModalChangelog.Text = "Installierte Version: v" + AutoUpdater.CurrentVersion + "\n" +
-                                          "GitHub Releases Repo: " + AutoUpdater.ResolveGitHubRepo() + "\n" +
-                                          "Alle Optimierungen (Erweiterter FPS-Booster, Frankfurt Server-Lock, Clay-Presets) sind aktiv.";
+                    ModalStatusHeader.Text = "Kein Update nötig";
+                    ModalChangelog.Text = "Installiert: v" + AutoUpdater.CurrentVersion + "\n" +
+                                          "Quelle: github.com/" + AutoUpdater.ResolveGitHubRepo();
                     ModalActionBtn.Content = "Schließen";
-                    ModalActionBtn.Background = (Brush)FindResource("AccentSoft");
-                    ModalActionBtn.Foreground = (Brush)FindResource("Accent");
-                    ModalActionBtn.BorderBrush = (Brush)FindResource("Accent");
+                    ModalActionBtn.Style = (Style)FindResource("Action");
                     ModalActionBtn.Click -= StartUpdateInstall_Click;
                     ModalActionBtn.Click -= UpdateClose_Click;
                     ModalActionBtn.Click += UpdateClose_Click;
@@ -393,7 +388,7 @@ namespace RetracBoost
             {
                 if (!silent)
                 {
-                    ModalStatusHeader.Text = "Fehler bei Update-Prüfung";
+                    ModalStatusHeader.Text = "Update-Suche fehlgeschlagen";
                     ModalChangelog.Text = ex.Message;
                 }
             }
@@ -468,7 +463,7 @@ namespace RetracBoost
                     });
                 });
 
-                ModalStatusHeader.Text = "Wird neu gestartet...";
+                ModalStatusHeader.Text = "Starte neu …";
                 AutoUpdater.ApplyUpdateAndRestart(downloadedFile);
             }
             catch (Exception ex)
