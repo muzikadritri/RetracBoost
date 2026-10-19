@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
@@ -788,32 +789,73 @@ namespace RetracBoost
         [DllImport("ntdll.dll")]
         static extern int NtSetSystemInformation(int infoClass, ref int info, int length);
 
+        [DllImport("ntdll.dll")]
+        static extern int NtQuerySystemInformation(int infoClass, IntPtr info, int length, out int returnLength);
+
+        // RAM-Wächter: geleert wird nur, wenn wirklich kaum freier RAM übrig ist und der Standby-Cache groß ist
+        const long LowFreeBytes = 1024L * 1024 * 1024;
+        const long MinStandbyBytes = 1024L * 1024 * 1024;
+
+        static bool EnablePrivilege()
+        {
+            IntPtr token;
+            if (!OpenProcessToken(Process.GetCurrentProcess().Handle, TokenAdjustPrivileges | TokenQuery, out token))
+                return false;
+            try
+            {
+                Luid luid;
+                if (!LookupPrivilegeValue(null, "SeProfileSingleProcessPrivilege", out luid))
+                    return false;
+                var tp = new TokenPrivileges
+                {
+                    PrivilegeCount = 1,
+                    Luid = luid,
+                    Attributes = SePrivilegeEnabled
+                };
+                return AdjustTokenPrivileges(token, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);
+            }
+            finally { CloseHandle(token); }
+        }
+
         public static bool PurgeStandbyList()
         {
             try
             {
-                IntPtr token;
-                if (!OpenProcessToken(Process.GetCurrentProcess().Handle, TokenAdjustPrivileges | TokenQuery, out token))
-                    return false;
-                try
-                {
-                    Luid luid;
-                    if (!LookupPrivilegeValue(null, "SeProfileSingleProcessPrivilege", out luid))
-                        return false;
-                    var tp = new TokenPrivileges
-                    {
-                        PrivilegeCount = 1,
-                        Luid = luid,
-                        Attributes = SePrivilegeEnabled
-                    };
-                    AdjustTokenPrivileges(token, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);
-                }
-                finally { CloseHandle(token); }
-
+                if (!EnablePrivilege()) return false;
                 int cmd = MemoryPurgeStandbyList;
                 return NtSetSystemInformation(SystemMemoryListInformation, ref cmd, sizeof(int)) == 0;
             }
             catch { return false; }
+        }
+
+        /// <summary>Freier (leerer) RAM und Standby-Cache in Bytes; false, wenn Windows die Listen nicht liefert.</summary>
+        public static bool QueryLists(out long freeBytes, out long standbyBytes)
+        {
+            freeBytes = standbyBytes = 0;
+            // SYSTEM_MEMORY_LIST_INFORMATION: Zero, Free, Modified, ModifiedNoWrite, Bad, PageCountByPriority[8], Repurposed[8], ModifiedPageFile
+            int ptr = IntPtr.Size, size = ptr * 22;
+            IntPtr buf = Marshal.AllocHGlobal(size);
+            try
+            {
+                if (!EnablePrivilege()) return false;
+                int ret;
+                if (NtQuerySystemInformation(SystemMemoryListInformation, buf, size, out ret) != 0) return false;
+                Func<int, long> at = i => ptr == 8 ? Marshal.ReadInt64(buf, i * 8) : Marshal.ReadInt32(buf, i * 4);
+                long page = Environment.SystemPageSize;
+                freeBytes = (at(0) + at(1)) * page;
+                for (int i = 5; i < 13; i++) standbyBytes += at(i) * page;
+                return true;
+            }
+            catch { return false; }
+            finally { Marshal.FreeHGlobal(buf); }
+        }
+
+        /// <summary>Leert den Standby-Cache nur, wenn der freie RAM knapp wird (wie ISLC). true = geleert.</summary>
+        public static bool PurgeIfLow()
+        {
+            long free, standby;
+            if (!QueryLists(out free, out standby)) return false;
+            return free < LowFreeBytes && standby > MinStandbyBytes && PurgeStandbyList();
         }
     }
 
@@ -1187,7 +1229,10 @@ namespace RetracBoost
     //      - Textur-Streaming-Boost & reduzierter Overhead für verdeckte Objekte hinter Wänden
     //      - Komplettes Abschalten der Match-Logdatei ([Core.Log] Global=off) & GPU-Crash-Debugging aus
     //      - NVIDIA Reflex Low-Latency in Fortnite aktiviert (bLatencyTweak1=True, LatencyTweak2=1)
-    //   4) Live Standby-RAM-Bereinigung (NtSetSystemInformation) für freien Arbeitsspeicher ohne Page-Faults
+    //   4) Live Standby-RAM-Bereinigung (NtSetSystemInformation) für freien Arbeitsspeicher ohne Page-Faults,
+    //      während des Spiels automatisch, sobald der freie RAM knapp wird (RAM-Wächter)
+    //   5) DirectX: Spiel immer auf der Hochleistungs-GPU (Notebooks mit Onboard-Grafik) und
+    //      Flip-Modell auch im randlosen Fenster (Optimierungen für Spiele im Fenstermodus)
     // ------------------------------------------------------------------------------------------
     sealed class FpsBoostTweak : Tweak
     {
@@ -1200,6 +1245,8 @@ namespace RetracBoost
         const string SysProfilePath = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile";
         const string GamesProfilePath = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games";
         const string GameConfigPath = @"System\GameConfigStore";
+        const string GpuPrefPath = @"Software\Microsoft\DirectX\UserGpuPreferences";
+        const string GpuPrefGlobal = "DirectXUserGlobalSettings";
 
         public string EngineIniPath { get; set; }
         public string GameUserIniPath { get; set; }
@@ -1241,8 +1288,8 @@ namespace RetracBoost
         {
             get
             {
-                return L.T("0-Lag CPU/GPU Sync, Multi-Core RHI, DirectX 11 Async, 100 % CPU-Gaming-Fokus, Low-Latency & RAM-Flush",
-                           "0-Lag CPU/GPU sync, multi-core RHI, DirectX 11 async, 100% CPU gaming focus, low-latency & RAM flush");
+                return L.T("0-Lag CPU/GPU-Sync, Multi-Core-Rendering, Hochleistungs-GPU, Flip-Modell, 100 % CPU-Gaming-Fokus, Low-Latency & RAM-Wächter",
+                           "0-lag CPU/GPU sync, multi-core rendering, high-performance GPU, flip model, 100% CPU gaming focus, low latency & RAM guard");
             }
         }
         public override bool WeApplied
@@ -1250,7 +1297,35 @@ namespace RetracBoost
             get { return RegStore.HasBackup(Id) || Store.Keys(BackupPrefix).Count > 0; }
         }
 
+        /// <summary>Setzt in einer DirectX-Einstellungszeile ("A=1;B=2;") einen Eintrag, ohne die übrigen anzufassen.</summary>
+        static string WithFlag(string current, string key, string value)
+        {
+            var parts = (current ?? "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).Where(p => p.Length > 0).ToList();
+            if (parts.Any(p => p.Equals(key + "=" + value, StringComparison.OrdinalIgnoreCase))) return current;
+            parts.RemoveAll(p => p.StartsWith(key + "=", StringComparison.OrdinalIgnoreCase));
+            parts.Add(key + "=" + value);
+            return string.Join(";", parts) + ";";
+        }
+
+        /// <summary>DirectX-Werte in HKCU: Ziel ergibt sich aus dem aktuellen Wert, ohne Windows-Standard (Zurücksetzen nur per Sicherung).</summary>
+        static RegItem DxFlag(string name, string key, string value)
+        {
+            var cur = Reg.Get(GpuPrefPath, name, true) as string;
+            return new RegItem { Path = GpuPrefPath, Name = name, Kind = RegistryValueKind.String, Target = WithFlag(cur, key, value), User = true };
+        }
+
         static List<RegItem> RegItems()
+        {
+            var list = BaseRegItems();
+            // Flip-Modell auch im randlosen Fenster: weniger Eingabeverzögerung, VRR/G-Sync funktioniert
+            list.Add(DxFlag(GpuPrefGlobal, "SwapEffectUpgradeEnable", "1"));
+            // Spiel immer auf der Hochleistungs-GPU (wichtig bei Notebooks mit Onboard- und Grafikkarte)
+            string exe = Store.Get("ogfn.path");
+            if (!string.IsNullOrEmpty(exe) && File.Exists(exe)) list.Add(DxFlag(exe, "GpuPreference", "2"));
+            return list;
+        }
+
+        static List<RegItem> BaseRegItems()
         {
             return new List<RegItem>
             {
@@ -1348,7 +1423,12 @@ namespace RetracBoost
                 new IniEntry { Section = fn, Key = "LatencyTweak2", Value = "1" },
                 new IniEntry { Section = fn, Key = "bUseGPUCrashDebugging", Value = "False" },
                 new IniEntry { Section = fn, Key = "bShowViewerCount", Value = "False" },
-                new IniEntry { Section = fn, Key = "bDisableMouseAcceleration", Value = "True" }
+                new IniEntry { Section = fn, Key = "bDisableMouseAcceleration", Value = "True" },
+                // Multithreaded Rendering (DirectX 11): Draw-Calls auf mehrere Kerne verteilt
+                new IniEntry { Section = fn, Key = "bAllowMultithreadedRendering", Value = "True" },
+                // VSync aus und DirectX 11 statt 12 (14.x ruckelt unter DX12 beim Shader-Kompilieren) - nur wenn das Spiel die Werte führt
+                new IniEntry { Section = fn, Key = "bUseVSync", Value = "False", OnlyIfPresent = true },
+                new IniEntry { Section = "[D3DRHIPreference]", Key = "bUseD3D12InGame", Value = "False", OnlyIfPresent = true }
             };
         }
 
@@ -1490,118 +1570,190 @@ namespace RetracBoost
     }
 
     // ------------------------------------------------------------------------------------------
-    // Frankfurt Server-Lock (Sub-Region Blocker):
-    // Sperrt per Windows Firewall (netsh) alle schlechteren EU-Ausweichserver von AWS
-    // (London eu-west-2, Irland eu-west-1, Paris eu-west-3, Stockholm eu-north-1, Mailand eu-south-1, Spanien eu-south-2).
-    // Dadurch sieht das Fortnite-Matchmaking nur Frankfurt (eu-central-1) als erreichbaren Server
-    // und verbindet ingame immer mit dem besten Server (5-15 ms Ping).
+    // Frankfurt Server-Lock (100 % Frankfurt):
+    //   1) Sperrt per Windows-Firewall ausgehendes UDP des Spiels zu ALLEN AWS-Bereichen in Europa außer Frankfurt
+    //      (London, Irland, Paris, Stockholm, Mailand, Spanien, Zürich, European Sovereign Cloud; IPv4 + IPv6).
+    //      Die Ping-Messung des Matchmakings erreicht dann nur noch Frankfurt (eu-central-1).
+    //   2) Match-Server-Wächter: erkennt die App im Match einen Server, der nachweislich nicht in Frankfurt steht
+    //      (anderer Hoster/Standort), wird seine Adresse nach dem Match zusätzlich gesperrt.
+    //   3) Die Regel gilt nur für die Spiel-Exe; ist der Pfad noch unbekannt, wird sie beim nächsten Spielstart
+    //      automatisch auf die Exe eingeschränkt.
     // ------------------------------------------------------------------------------------------
     sealed class ServerLockTweak : Tweak
     {
         const string RulePrefix = "RetracBoost-ServerLock-";
         const string BackupPrefix = "bk|serverlock|";
+        const string ActiveKey = BackupPrefix + "active";
+        const string LearnedKey = "serverlock.learned";
+        const string PendingKey = "serverlock.pending";
+        const string ProgramKey = "serverlock.program";
+        const string StampKey = "serverlock.stamp";
+        const string RuleCountKey = "serverlock.rules";
+        const string FnSection = "[/Script/FortniteGame.FortGameUserSettings]";
+        const string StandardExe = @"C:\Program Files\Epic Games\Fortnite\FortniteGame\Binaries\Win64\FortniteClient-Win64-Shipping.exe";
+        const int ChunkSize = 200;      // Adressen pro Firewall-Regel (hält die netsh-Befehlszeile kurz)
+        const int MaxLearned = 128;
 
         public override string Id { get { return "serverlock"; } }
-        public override string Title { get { return L.T("Bester Server-Lock (Frankfurt 100 %)", "Best server lock (Frankfurt 100%)"); } }
+        public override string Title { get { return L.T("Server-Lock (nur Frankfurt)", "Server lock (Frankfurt only)"); } }
         public override string Summary
         {
             get
             {
-                return L.T("Sperrt schlechtere EU-Ausweichserver (London, Irland, Paris) · Fortnite verbindet ingame immer mit dem besten Server",
-                           "Blocks worse EU fallback servers (London, Ireland, Paris) · Fortnite always connects in-game to the best server");
+                return L.T("Sperrt alle anderen EU-Standorte (London, Irland, Paris, Stockholm, Mailand, Spanien, Zürich) · Matchmaking sieht nur Frankfurt",
+                           "Blocks every other EU location (London, Ireland, Paris, Stockholm, Milan, Spain, Zurich) · matchmaking only sees Frankfurt");
             }
         }
+
         public override string Detail
         {
             get
             {
-                return IsApplied()
-                    ? L.T("Aktiv: 302 Ausweich-IP-Bereiche gesperrt · Nur Frankfurt (eu-central-1) erlaubt",
-                          "Active: 302 fallback IP ranges blocked · Only Frankfurt (eu-central-1) allowed")
-                    : L.T("Inaktiv: Matchmaking kann dich auf London/Paris (35-50 ms) werfen",
-                          "Inactive: Matchmaking may place you on London/Paris (35-50 ms)");
+                if (!WeApplied)
+                    return L.T("Aus: Matchmaking kann dich auf London/Paris/Irland (25-50 ms) setzen", "Off: matchmaking may place you on London/Paris/Ireland (25-50 ms)");
+                int learned = Learned().Count;
+                string text = L.T("Aktiv: ", "Active: ") + BlockList().Count + L.T(" Bereiche gesperrt, nur Frankfurt erlaubt", " ranges blocked, only Frankfurt allowed");
+                if (learned > 0) text += L.T(" · " + learned + " fremde Match-Server gelernt", " · " + learned + " foreign match servers learned");
+                if (string.IsNullOrEmpty(Store.Get(ProgramKey))) text += L.T(" · gilt systemweit, bis das Spiel einmal läuft", " · system-wide until the game has run once");
+                return text;
             }
         }
 
-        public override bool Relevant { get { return true; } }
-        public override bool WeApplied { get { return Store.Get(BackupPrefix + "active") == "1"; } }
+        public override bool WeApplied { get { return Store.Get(ActiveKey) == "1"; } }
+
+        /// <summary>Vom Match-Server-Wächter gelernte Adressen.</summary>
+        static List<string> Learned()
+        {
+            return (Store.Get(LearnedKey) ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+        }
+
+        static List<string> BlockList()
+        {
+            var list = ServerLockData.BlockedCidrs.ToList();
+            list.AddRange(Learned());
+            return list;
+        }
+
+        /// <summary>Merkt sich einen nachweislich nicht-Frankfurter Match-Server. true = neu gelernt.</summary>
+        public static bool Learn(IPAddress ip)
+        {
+            if (ip == null || Probe.IsPrivate(ip) || ServerLockData.InFrankfurt(ip) || ServerLockData.InBlocked(ip)) return false;
+            var list = Learned();
+            string s = ip.ToString();
+            if (list.Contains(s)) return false;
+            list.Add(s);
+            if (list.Count > MaxLearned) list.RemoveRange(0, list.Count - MaxLearned);
+            Store.TrySet(LearnedKey, string.Join(",", list));
+            Store.TrySet(PendingKey, "1");
+            return true;
+        }
+
+        /// <summary>true, wenn gelernte Server oder ein bekannt gewordener Spielpfad noch nicht in den Regeln stehen.</summary>
+        public bool NeedsRefresh
+        {
+            get
+            {
+                if (!WeApplied) return false;
+                if (Store.Get(PendingKey) == "1" || Store.Get(StampKey) != ServerLockData.Stamp) return true;
+                string exe = GameExe();
+                return exe != null && !string.Equals(exe, Store.Get(ProgramKey), StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        static string GameExe()
+        {
+            string exe = Store.Get("ogfn.path");
+            if (!string.IsNullOrEmpty(exe) && File.Exists(exe)) return exe;
+            return File.Exists(StandardExe) ? StandardExe : null;
+        }
+
+        static bool RuleExists(int n)
+        {
+            var r = Sh.Netsh("advfirewall firewall show rule name=\"" + RulePrefix + n + "\"");
+            return r.Ok && r.Out.Contains(RulePrefix + n);
+        }
 
         public override bool IsApplied()
         {
-            var r = Sh.Netsh("advfirewall firewall show rule name=\"" + RulePrefix + "1\"");
-            return r.Ok && r.Out.Contains(RulePrefix + "1");
+            int n;
+            if (!int.TryParse(Store.Get(RuleCountKey), out n) || n <= 0) return false;
+            // Regeln einer älteren Version (andere Datenbasis) gelten als nicht aktiv und werden neu geschrieben.
+            if (Store.Get(StampKey) != ServerLockData.Stamp) return false;
+            return RuleExists(1) && RuleExists(n);
         }
 
         public override void Apply()
         {
-            RevertRules();
+            RemoveRules();
 
-            var all = ServerLockData.NonFrankfurtCidrs;
-            int half = all.Length / 2;
-            var chunk1 = all.Take(half).ToArray();
-            var chunk2 = all.Skip(half).ToArray();
-
-            string fnExe = Store.Get("ogfn.path");
-            if (string.IsNullOrEmpty(fnExe) || !File.Exists(fnExe))
+            string exe = GameExe();
+            string progArg = exe != null ? " program=\"" + exe + "\"" : "";
+            var all = BlockList();
+            int rules = 0;
+            for (int i = 0; i < all.Count; i += ChunkSize)
             {
-                string standard = @"C:\Program Files\Epic Games\Fortnite\FortniteGame\Binaries\Win64\FortniteClient-Win64-Shipping.exe";
-                if (File.Exists(standard)) fnExe = standard;
+                rules++;
+                string ips = string.Join(",", all.Skip(i).Take(ChunkSize));
+                var r = Sh.Netsh("advfirewall firewall add rule name=\"" + RulePrefix + rules + "\" dir=out action=block protocol=UDP" + progArg +
+                                 " remoteip=" + ips + " enable=yes profile=any");
+                if (!r.Ok)
+                {
+                    RemoveRules();
+                    throw new InvalidOperationException(L.T("Firewall-Regel fehlgeschlagen: ", "Firewall rule failed: ") + r.Text);
+                }
             }
 
-            string progArg = !string.IsNullOrEmpty(fnExe) && File.Exists(fnExe) ? " program=\"" + fnExe + "\"" : "";
-
-            string ips1 = string.Join(",", chunk1);
-            string args1 = "advfirewall firewall add rule name=\"" + RulePrefix + "1\" dir=out action=block protocol=UDP" + progArg + " remoteip=\"" + ips1 + "\" enable=yes";
-            var r1 = Sh.Netsh(args1);
-            if (!r1.Ok) throw new InvalidOperationException(r1.Text);
-
-            string ips2 = string.Join(",", chunk2);
-            string args2 = "advfirewall firewall add rule name=\"" + RulePrefix + "2\" dir=out action=block protocol=UDP" + progArg + " remoteip=\"" + ips2 + "\" enable=yes";
-            var r2 = Sh.Netsh(args2);
-            if (!r2.Ok) throw new InvalidOperationException(r2.Text);
-
-            Store.Set(BackupPrefix + "active", "1");
+            Store.Set(RuleCountKey, rules.ToString(CultureInfo.InvariantCulture));
+            Store.Set(StampKey, ServerLockData.Stamp);
+            Store.Set(ProgramKey, exe);
+            Store.Set(PendingKey, null);
+            Store.Set(ActiveKey, "1");
             EnsureGameUserRegion();
         }
 
         public override void Revert()
         {
-            RevertRules();
-            Store.Set(BackupPrefix + "active", null);
+            RemoveRules();
+            foreach (var t in Targets()) IniEditor.RevertIni(BackupPrefix, t.Value, t.Key, RegionEntries(), true);
+            foreach (var k in new[] { RuleCountKey, StampKey, ProgramKey, PendingKey, LearnedKey, ActiveKey }) Store.Set(k, null);
         }
 
-        static void RevertRules()
+        static void RemoveRules()
         {
-            for (int i = 1; i <= 4; i++)
+            // Entfernt alle Regeln dieser App (auch die der älteren Version mit fester Anzahl).
+            var r = Sh.PowerShell("Get-NetFirewallRule -DisplayName '" + RulePrefix + "*' -ErrorAction SilentlyContinue | Remove-NetFirewallRule -ErrorAction SilentlyContinue;'OK'");
+            if (!r.Ok)
+                for (int i = 1; i <= 16; i++) Sh.Netsh("advfirewall firewall delete rule name=\"" + RulePrefix + i + "\"");
+        }
+
+        static Dictionary<string, string> Targets()
+        {
+            string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            return new Dictionary<string, string>
             {
-                Sh.Netsh("advfirewall firewall delete rule name=\"" + RulePrefix + i + "\"");
-            }
+                { "gus", Path.Combine(local, @"FortniteGame\Saved\Config\WindowsClient\GameUserSettings.ini") },
+                { "rgus", Path.Combine(local, @"RetracGame\Saved\Config\WindowsClient\GameUserSettings.ini") }
+            };
+        }
+
+        static List<IniEntry> RegionEntries()
+        {
+            return new List<IniEntry> { new IniEntry { Section = FnSection, Key = "RegionId", Value = "EU" } };
         }
 
         static void EnsureGameUserRegion()
         {
-            try
+            foreach (var t in Targets())
             {
-                string fnDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"FortniteGame\Saved\Config\WindowsClient");
-                string retracDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"RetracGame\Saved\Config\WindowsClient");
-                foreach (var dir in new[] { fnDir, retracDir })
-                {
-                    string gus = Path.Combine(dir, "GameUserSettings.ini");
-                    if (File.Exists(gus))
-                    {
-                        IniEditor.ApplyIni(BackupPrefix, gus, "gus", new List<IniEntry>
-                        {
-                            new IniEntry { Section = "[/Script/FortniteGame.FortGameUserSettings]", Key = "RegionId", Value = "EU" }
-                        });
-                    }
-                }
+                try { if (File.Exists(t.Value)) IniEditor.ApplyIni(BackupPrefix, t.Value, t.Key, RegionEntries()); }
+                catch { }
             }
-            catch { }
         }
 
         public override string Snapshot()
         {
-            return "serverlock=" + (IsApplied() ? "active" : "inactive");
+            return "serverlock=" + (IsApplied() ? "active" : "inactive") + " rules=" + (Store.Get(RuleCountKey) ?? "-")
+                   + " ranges=" + BlockList().Count + " learned=" + Learned().Count;
         }
     }
 
@@ -1609,7 +1761,8 @@ namespace RetracBoost
     // Potato-Grafik (wie EM Tweaks, kostenlos):
     //   1) NVIDIA-Treiberprofil "Fortnite" direkt über nvapi64.dll (DRS)
     //   2) Scalability.ini + Engine.ini: erzwingt r.Streaming.PoolSize=1 & r.Streaming.MipBias=15 auch NACH Cloud-Settings-Login (Frame 380)
-    //   3) GameUserSettings.ini: alle ScalabilityGroups auf 0, MotionBlur/Gras/RayTracing aus
+    //   3) GameUserSettings.ini: alle ScalabilityGroups auf 0, MotionBlur/Gras/RayTracing aus - danach schreibgeschützt,
+    //      damit das Spiel die Werte beim Beenden oder nach dem Login nicht wieder hochsetzt (wie EM Tweaks)
     // ------------------------------------------------------------------------------------------
     sealed class PotatoPreset
     {
@@ -1628,6 +1781,7 @@ namespace RetracBoost
     {
         const string BackupPrefix = "bk|potato|";
         const string PresetStoreKey = "potato.preset";
+        const string RoPrefix = BackupPrefix + "ro|";
 
         public string EngineIniPath { get; set; }
         public string GameUserIniPath { get; set; }
@@ -1775,10 +1929,10 @@ namespace RetracBoost
                 var p = CurrentPreset;
                 bool nv = UseNvidiaDrs && NvDrs.IsAvailable();
                 return nv
-                    ? L.T("NVIDIA LOD Bias " + p.LodLabel + " + EM-Tweaks Clay/Potato-Grafik · kostenlos",
-                          "NVIDIA LOD Bias " + p.LodLabel + " + EM Tweaks clay/potato graphics · free")
-                    : L.T("Engine-LOD-Bias (" + p.LodLabel + ") + minimale Schatten, Effekte und Texturen · kostenlos",
-                          "Engine LOD bias (" + p.LodLabel + ") + minimal shadows, effects and textures · free");
+                    ? L.T("NVIDIA LOD Bias " + p.LodLabel + " + EM-Tweaks Clay/Potato-Grafik · Einstellungen gesperrt · kostenlos",
+                          "NVIDIA LOD Bias " + p.LodLabel + " + EM Tweaks clay/potato graphics · settings locked · free")
+                    : L.T("Engine-LOD-Bias (" + p.LodLabel + ") + minimale Schatten, Effekte und Texturen · Einstellungen gesperrt · kostenlos",
+                          "Engine LOD bias (" + p.LodLabel + ") + minimal shadows, effects and textures · settings locked · free");
             }
         }
         public override bool Relevant
@@ -1867,6 +2021,10 @@ namespace RetracBoost
                 list.Add(new IniEntry { Section = s, Key = "r.FastBlurThreshold", Value = "0" });
                 list.Add(new IniEntry { Section = s, Key = "foliage.DensityScale", Value = "0" });
                 list.Add(new IniEntry { Section = s, Key = "grass.DensityScale", Value = "0" });
+                // Nebel aus (klarere Sicht auf Distanz) und grobere Beleuchtung durchsichtiger Effekte (Rauch, Glas, Wasser)
+                list.Add(new IniEntry { Section = s, Key = "r.Fog", Value = stripTextures ? "0" : "1" });
+                list.Add(new IniEntry { Section = s, Key = "r.TranslucencyLightingVolumeDim", Value = stripTextures ? "4" : "64" });
+                list.Add(new IniEntry { Section = s, Key = "r.Decal.FadeDurationScale", Value = "0.1" });
             }
             return list;
         }
@@ -2050,28 +2208,23 @@ namespace RetracBoost
             return anyChecked;
         }
 
+        /// <summary>
+        /// Entfernt Zeilen, die nur ältere Versionen geschrieben haben (Texturgruppen in [SystemSettings]).
+        /// Eigener Tag, damit die Sicherungen der aktuellen Werte und der "Abschnitt angelegt"-Vermerk unberührt bleiben;
+        /// Schlüssel, die die aktuelle Version selbst verwaltet, fasst sie nicht an.
+        /// </summary>
         void CleanLegacyEngineLods()
         {
             if (!File.Exists(EngineIniPath)) return;
             var legacy = new List<IniEntry>
             {
-                new IniEntry { Section = "[SystemSettings]", Key = "r.MipMapLODBias", Value = "0" },
-                new IniEntry { Section = "[SystemSettings]", Key = "r.Streaming.MipBias", Value = "0" },
-                new IniEntry { Section = "[SystemSettings]", Key = "r.Streaming.MaxEffectiveScreenSize", Value = "0" },
-                new IniEntry { Section = "[SystemSettings]", Key = "r.Streaming.UsePerTextureBias", Value = "1" },
-                new IniEntry { Section = "[SystemSettings]", Key = "r.Streaming.FullyLoadUsedTextures", Value = "0" },
-                new IniEntry { Section = "[SystemSettings]", Key = "r.Streaming.DropMips", Value = "0" },
-                new IniEntry { Section = "[SystemSettings]", Key = "r.SkeletalMeshLODBias", Value = "0" },
-                new IniEntry { Section = "[SystemSettings]", Key = "r.DetailMode", Value = "0" },
-                new IniEntry { Section = "[SystemSettings]", Key = "r.MaterialQualityLevel", Value = "0" },
                 new IniEntry { Section = "[SystemSettings]", Key = "TEXTUREGROUP_Terrain_Heightmap", Value = "" },
                 new IniEntry { Section = "[SystemSettings]", Key = "TEXTUREGROUP_Terrain_Weightmap", Value = "" },
-                new IniEntry { Section = "[SystemSettings]", Key = "r.LandscapeLODBias", Value = "" },
                 new IniEntry { Section = "[SystemSettings]", Key = "r.StaticMeshLODDistanceScale", Value = "" }
             };
             foreach (var tg in PlasticTextureGroups)
                 legacy.Add(new IniEntry { Section = "[SystemSettings]", Key = tg, Value = "" });
-            IniEditor.RevertIni(BackupPrefix, EngineIniPath, "eng", legacy, false);
+            IniEditor.RevertIni(BackupPrefix, EngineIniPath, "legacy", legacy, false);
         }
 
         public override void Apply()
@@ -2101,6 +2254,7 @@ namespace RetracBoost
             CleanLegacyEngineLods();
             IniEditor.ApplyIni(BackupPrefix, EngineIniPath, "eng", EngineEntries(p));
             IniEditor.ApplyIni(BackupPrefix, GameUserIniPath, "gus", GameUserEntries());
+            LockFile(GameUserIniPath, "gus");
 
             if (File.Exists(EngineIniPath))
             {
@@ -2150,10 +2304,34 @@ namespace RetracBoost
                 try
                 {
                     if (File.Exists(rGus))
+                    {
                         IniEditor.ApplyIni(BackupPrefix, rGus, "rgus", GameUserEntries());
+                        LockFile(rGus, "rgus");
+                    }
                 }
                 catch { }
             }
+        }
+
+        /// <summary>Setzt den Schreibschutz und merkt sich, ob er vorher schon gesetzt war.</summary>
+        static void LockFile(string path, string tag)
+        {
+            if (!File.Exists(path)) return;
+            var attrs = File.GetAttributes(path);
+            string key = RoPrefix + tag;
+            if (Store.Get(key) == null) Store.Set(key, (attrs & FileAttributes.ReadOnly) != 0 ? "1" : "0");
+            File.SetAttributes(path, attrs | FileAttributes.ReadOnly);
+        }
+
+        /// <summary>Stellt den ursprünglichen Schreibschutz-Zustand wieder her.</summary>
+        static void UnlockFile(string path, string tag)
+        {
+            string key = RoPrefix + tag;
+            string saved = Store.Get(key);
+            if (saved == null) return;
+            if (saved == "0" && File.Exists(path))
+                File.SetAttributes(path, File.GetAttributes(path) & ~FileAttributes.ReadOnly);
+            Store.Set(key, null);
         }
 
         public override void Revert()
@@ -2188,9 +2366,9 @@ namespace RetracBoost
                 foreach (var k in Store.Keys(BackupPrefix + "drs|")) Store.Set(k, null);
             }
 
-            CleanLegacyEngineLods();
             IniEditor.RevertIni(BackupPrefix, EngineIniPath, "eng", EngineEntries(p), hasAnyBackup);
             IniEditor.RevertIni(BackupPrefix, GameUserIniPath, "gus", GameUserEntries(), hasAnyBackup);
+            UnlockFile(GameUserIniPath, "gus");
 
             string scaPath = EffectiveScalabilityPath;
             try
@@ -2241,6 +2419,7 @@ namespace RetracBoost
                 {
                     if (File.Exists(rGus))
                         IniEditor.RevertIni(BackupPrefix, rGus, "rgus", GameUserEntries(), hasAnyBackup);
+                    UnlockFile(rGus, "rgus");
                 }
                 catch { }
             }

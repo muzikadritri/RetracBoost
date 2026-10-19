@@ -99,7 +99,7 @@ namespace RetracBoostSetup
                 if (key == null) return;
                 key.SetValue("DisplayName", "Retrac Boost", RegistryValueKind.String);
                 key.SetValue("DisplayIcon", exePath + ",0", RegistryValueKind.String);
-                key.SetValue("DisplayVersion", "1.0.1", RegistryValueKind.String);
+                key.SetValue("DisplayVersion", "1.0.2", RegistryValueKind.String);
                 key.SetValue("Publisher", "Retrac Tools", RegistryValueKind.String);
                 key.SetValue("InstallLocation", installDir, RegistryValueKind.String);
                 key.SetValue("UninstallString", "\"" + uninstallerPath + "\" --uninstall", RegistryValueKind.String);
@@ -545,7 +545,7 @@ namespace RetracBoostSetup
                 if (pingBoost) AddLog("✓", "Ping- & Netzwerk-Booster aktiviert (Nagle aus, AFD Fast-Datagram, QoS DSCP 46, Adapter-Tuning).");
                 if (fpsBoost) AddLog("✓", "Unsichtbarer FPS-Booster aktiviert (NVIDIA Max Performance, Low Latency, Kernel-Priorität, HAGS, RAM-Clean).");
                 if (retracPack) AddLog("✓", "Retrac / Fortnite Latenz-Paket aktiviert (FSO aus, Spielmodus an, 1:1 Maus, Engine-Latenz).");
-                if (serverLock) AddLog("✓", "Bester Server-Lock aktiviert (302 Ausweich-IPs gesperrt – 100% Frankfurt eu-central-1 wie ExitLag).");
+                if (serverLock) AddLog("✓", "Server-Lock aktiviert (alle EU-Standorte außer Frankfurt gesperrt, IPv4 + IPv6 – nur noch eu-central-1).");
                 if (potatoMode != "off")
                     AddLog("✓", "Potato-Grafik (Stufe: " + potatoMode.ToUpperInvariant() + ") inkl. Anti-Berg-Bug-Fix aktiviert.");
                 else

@@ -533,6 +533,8 @@ namespace RetracBoost
             UpdateMaster();
             UpdateRetracMaster();
 
+            await RefreshServerLockAsync();              // alte Regeln (ältere Version/Datenbasis) still erneuern
+
             // DNS-Messung läuft im Hintergrund, blockiert aber nichts.
             await MeasureDns();
 

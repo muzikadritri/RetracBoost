@@ -1,0 +1,91 @@
+# Baut Retrac Boost auf Windows und veröffentlicht RetracBoost.exe + RetracBoost-Setup.exe als GitHub-Release.
+# Auslöser: ein Tag "v*" (z. B. v1.0.2) oder manuell über "Run workflow".
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release-Tag (z. B. v1.0.2)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Version prüfen
+        shell: pwsh
+        run: |
+          $want = $env:TAG.TrimStart('v')
+          $src = Get-Content RetracBoost/AutoUpdater.cs -Raw
+          if ($src -notmatch "CurrentVersion = `"$([regex]::Escape($want))`"") {
+            throw "AutoUpdater.CurrentVersion passt nicht zu Tag $env:TAG"
+          }
+
+      - name: Alte Build-Reste entfernen
+        shell: pwsh
+        run: |
+          foreach ($d in 'RetracBoost/obj','RetracBoost/bin','RetracBoostSetup/obj','RetracBoostSetup/bin') {
+            if (Test-Path $d) { Remove-Item $d -Recurse -Force }
+          }
+
+      - name: Bauen (App + Setup)
+        shell: pwsh
+        run: ./RetracBoost/build.ps1 -Config Release
+
+      - name: Ergebnis prüfen
+        shell: pwsh
+        run: |
+          foreach ($f in 'RetracBoost.exe','RetracBoost-Setup.exe') {
+            if (-not (Test-Path $f)) { throw "$f fehlt" }
+            $v = (Get-Item $f).VersionInfo.ProductVersion
+            "{0}: {1:N0} Bytes, Version {2}" -f $f, (Get-Item $f).Length, $v
+          }
+
+      - name: Release veröffentlichen
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: Retrac Boost ${{ env.TAG }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          files: |
+            RetracBoost.exe
+            RetracBoost-Setup.exe
+          body: |
+            ## Neu in ${{ env.TAG }}
+
+            **Server-Lock (nur Frankfurt)**
+            - Sperrt alle AWS-Standorte in Europa außer Frankfurt – inkl. Zürich, IPv6 und aller AWS-Dienste (1108 statt 302 Bereiche)
+            - Match-Server-Wächter: zeigt, ob dein Match-Server in Frankfurt steht, und sperrt fremde Server nach dem Match
+            - Regel gilt nur für die Spiel-Exe und wird bei Änderungen automatisch neu geschrieben
+
+            **Ping-Booster**
+            - UDP Receive Offload (Windows 11) aus
+            - Mehr Netzwerkkarten-Optionen: Interrupt-Verzögerungen, Energiesparen, WLAN-Roaming aus, RSS an
+
+            **FPS-Booster**
+            - Spiel immer auf der Hochleistungs-GPU, Flip-Modell im randlosen Fenster
+            - Multithreaded Rendering, DirectX 11, VSync aus
+            - RAM-Wächter während des Spiels
+            - Desktop: Energiesparplan „Ultimative Leistung"
+
+            **Potato-Grafik**
+            - GameUserSettings.ini wird gesperrt, damit das Spiel die Werte nicht zurücksetzt
+            - Nebel aus bei Stark/Extrem
+            - Fehler beim Zurücksetzen behoben (leerer Abschnitt in der Engine.ini, gelöschte eigene Werte)
+
+            ⚠️ Auf Windows noch nicht vollständig getestet. Bei Problemen: im Programm alles zurücksetzen und `RetracBoost.exe --selftest --out ergebnis.txt` ausführen.
