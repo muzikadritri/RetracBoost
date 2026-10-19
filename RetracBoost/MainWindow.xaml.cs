@@ -149,6 +149,8 @@ namespace RetracBoost
             if (HeaderVersionBadge != null)
                 HeaderVersionBadge.Text = "v" + AutoUpdater.CurrentVersion;
             LocalizeUpdater();
+            AutoUpdater.ForgetStoredRepo();
+            TxtGitHubRepo.Text = AutoUpdater.GitHubRepo;
 
             SourceInitialized += (s, e) => { ApplyTitleBar(); InitGameMenu(); };
             Closing += (s, e) => pinger.Stop();
@@ -359,14 +361,6 @@ namespace RetracBoost
         {
             try
             {
-                string targetRepo = null;
-                if (TxtGitHubRepo != null)
-                {
-                    targetRepo = TxtGitHubRepo.Text.Trim();
-                    if (!string.IsNullOrEmpty(targetRepo))
-                        AutoUpdater.SaveGitHubRepo(targetRepo);
-                }
-
                 if (!silent)
                 {
                     ModalStatusHeader.Text = L.T("Suche nach Updates …", "Checking for updates …");
@@ -374,7 +368,7 @@ namespace RetracBoost
                     ModalCheckBtn.IsEnabled = false;
                 }
 
-                var info = await AutoUpdater.CheckForUpdatesAsync(targetRepo);
+                var info = await AutoUpdater.CheckForUpdatesAsync();
                 latestUpdateInfo = info;
 
                 if (TxtGitHubRepo != null)
@@ -450,8 +444,7 @@ namespace RetracBoost
         {
             try
             {
-                string repo = AutoUpdater.NormalizeRepo(TxtGitHubRepo != null ? TxtGitHubRepo.Text : null);
-                Process.Start(new ProcessStartInfo("https://github.com/" + repo + "/releases") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(AutoUpdater.ReleasesUrl) { UseShellExecute = true });
             }
             catch { }
         }
