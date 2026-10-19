@@ -11,8 +11,9 @@ using System.Windows.Media;
 namespace RetracBoost
 {
     /// <summary>
-    /// Ingame-Menü (Alt+L): eigenes randloses Fenster über dem Spiel. Es wird nichts in das Spiel geladen,
-    /// die Werte wirken systemweit über die Gamma-Kurve (siehe <see cref="GammaRamp"/>).
+    /// Ingame-Menü (Alt+L): eigenes randloses Fenster über dem Spiel. Es wird nichts in das Spiel geladen.
+    /// Die Werte wirken über die Gamma-Kurve (siehe <see cref="GammaRamp"/>), aber nur auf dem Bildschirm des Spiels
+    /// und nur, solange das Spiel im Vordergrund ist. Welches Fenster das ist, meldet <see cref="SetGameWindow"/>.
     /// </summary>
     sealed class GameMenuWindow : Window
     {
@@ -26,8 +27,12 @@ namespace RetracBoost
         [StructLayout(LayoutKind.Sequential)]
         struct RECT { public int Left, Top, Right, Bottom; }
 
-        [StructLayout(LayoutKind.Sequential)]
-        struct MONITORINFO { public int cbSize; public RECT rcMonitor; public RECT rcWork; public int dwFlags; }
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        struct MONITORINFO
+        {
+            public int cbSize; public RECT rcMonitor; public RECT rcWork; public int dwFlags;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string szDevice;
+        }
 
         const uint MonitorDefaultToNearest = 2;
         const int GWL_EXSTYLE = -20, WS_EX_TOOLWINDOW = 0x80;
@@ -114,8 +119,8 @@ namespace RetracBoost
         readonly CheckBox pingSwitch;
         readonly Func<bool> pingOverlayOn;
         readonly Action<bool> setPingOverlay;
-        IntPtr previous;
-        bool loading, dirty, hiding;
+        IntPtr previous, gameWindow;
+        bool loading, dirty, hiding, enabled;
 
         public GameMenuWindow(Style switchStyle, Func<bool> pingOverlayOn, Action<bool> setPingOverlay)
         {
@@ -182,8 +187,8 @@ namespace RetracBoost
 
             root.Children.Add(new TextBlock
             {
-                Text = L.T("Nur im Fenster- oder randlosen Modus sichtbar, nicht im exklusiven Vollbild. Die Werte gelten für den ganzen Bildschirm und werden beim Beenden von Retrac Boost zurückgesetzt.",
-                           "Only visible in windowed or borderless mode, not in exclusive fullscreen. The values apply to the whole screen and are reset when Retrac Boost closes."),
+                Text = L.T("Wirkt nur, solange das Spiel im Vordergrund ist. Beim Wechsel auf den Desktop oder in ein anderes Programm sind die normalen Werte sofort zurück. Nur im Fenster- oder randlosen Modus sichtbar, nicht im exklusiven Vollbild.",
+                           "Only applies while the game is in front. Switch to the desktop or another program and the normal values are back right away. Only visible in windowed or borderless mode, not in exclusive fullscreen."),
                 Foreground = MutedBrush, FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0)
             });
 
@@ -214,11 +219,24 @@ namespace RetracBoost
             Deactivated += (s, e) => { if (IsVisible) HideMenu(false); };
         }
 
-        /// <summary>Gespeicherte Werte beim App-Start anwenden.</summary>
-        public void ApplySaved()
+        /// <summary>false, wenn das Ingame-Menü ausgeschaltet ist; dann bleibt die Kurve immer normal.</summary>
+        public bool Enabled
         {
-            if (!settings.IsDefault) Apply();
+            get { return enabled; }
+            set { enabled = value; Apply(); }
         }
+
+        /// <summary>
+        /// Das Spielfenster, das gerade im Vordergrund ist, oder IntPtr.Zero, wenn etwas anderes vorne ist.
+        /// Ohne Spiel vorne wird sofort zurückgesetzt.
+        /// </summary>
+        public void SetGameWindow(IntPtr hwnd)
+        {
+            gameWindow = hwnd;
+            Apply();
+        }
+
+        public bool IsOwnWindow(IntPtr hwnd) { return hwnd != IntPtr.Zero && hwnd == new WindowInteropHelper(this).Handle; }
 
         public void Toggle()
         {
@@ -313,11 +331,19 @@ namespace RetracBoost
         void Apply()
         {
             bool ok;
-            try { ok = GammaRamp.Apply(settings); }
+            try { ok = GammaRamp.Apply(settings, enabled && gameWindow != IntPtr.Zero ? DeviceOf(gameWindow) : null); }
             catch { ok = false; }
             status.Text = L.T("Windows hat diese Einstellung nicht übernommen. Etwas schwächer einstellen oder den Nachtmodus von Windows ausschalten.",
                               "Windows did not accept this setting. Try a weaker value or turn off Windows night light.");
             status.Visibility = ok ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        /// <summary>Gerätename des Bildschirms (z. B. \\.\DISPLAY1), auf dem das Fenster liegt.</summary>
+        static string DeviceOf(IntPtr hwnd)
+        {
+            var info = new MONITORINFO { cbSize = Marshal.SizeOf(typeof(MONITORINFO)) };
+            var mon = MonitorFromWindow(hwnd, MonitorDefaultToNearest);
+            return mon != IntPtr.Zero && GetMonitorInfo(mon, ref info) && !string.IsNullOrEmpty(info.szDevice) ? info.szDevice : null;
         }
 
         void ResetValues()
