@@ -1,5 +1,5 @@
 {
-  "version": "2.2.0",
-  "url": "https://github.com/DEIN-BENUTZERNAME/RetracBoost/releases/download/v2.2.0/RetracBoost.exe",
-  "changelog": "• Frankfurt Best-Server-Lock (100% eu-central-1 wie ExitLag)\n• Komplett neues Cyber-Design mit Ambient Glow & Pulsing Dots\n• Federleichte Spring-Animationen & Micro-Interactions\n• Ultra Potato Clay-Modus (0x00000078)\n• Auto-Updater mit 1-Klick Update & automatischem Neustart"
+  "version": "1.1.0",
+  "url": "https://github.com/muzikadritri/RetracBoost/releases/download/v1.1.0/RetracBoost.exe",
+  "changelog": "• Server-Lock: alle EU-Standorte außer Frankfurt gesperrt (inkl. Zürich, IPv6, alle AWS-Dienste) + Match-Server-Wächter\n• Ping-Booster: UDP-Bündelung (URO) aus, mehr Netzwerkkarten-Optionen (Interrupt-Delays, Energiesparen, WLAN-Roaming, RSS)\n• FPS-Booster: Hochleistungs-GPU fürs Spiel, Flip-Modell im Fenster, Multithreaded Rendering, RAM-Wächter, Ultimative Leistung am Desktop\n• Potato-Grafik: Einstellungen gesperrt, Nebel aus, Fehler beim Zurücksetzen behoben"
 }

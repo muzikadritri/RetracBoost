@@ -15,7 +15,7 @@ namespace RetracBoost
     public partial class MainWindow
     {
         bool wasGameRunning, detecting;
-        DateTime lastDetect = DateTime.MinValue;
+        DateTime lastDetect = DateTime.MinValue, lastRamCheck = DateTime.MinValue;
         ServerInfo lastServer;
 
         void LocalizeRetrac()
@@ -104,6 +104,13 @@ namespace RetracBoost
             if (!anyGame && wasGameRunning) OnGameStopped();
             wasGameRunning = anyGame;
 
+            // RAM-Wächter des FPS-Boosters: alle ~30 s prüfen, Standby-Cache nur bei knappem freien RAM leeren
+            if (anyGame && rowFps.IsOn && Admin.IsElevated && DateTime.UtcNow - lastRamCheck > TimeSpan.FromSeconds(30))
+            {
+                lastRamCheck = DateTime.UtcNow;
+                var _ram = Task.Run(() => RamCleaner.PurgeIfLow());
+            }
+
             // Server automatisch erkennen: solange kein Server bekannt ist alle 10 s, danach alle 45 s (Server wechselt je Match)
             if (ogfnRunning && !detecting && Admin.IsElevated)
             {
@@ -152,6 +159,7 @@ namespace RetracBoost
                 var __ = RefreshRowAsync(rowEngine);
                 var ___ = RefreshRowAsync(rowPotato);
                 var ____ = RefreshRowAsync(rowFps);
+                var _____ = RefreshServerLockAsync();  // Regel auf die nun bekannte Spiel-Exe einschränken
             }
             if (Admin.IsElevated)
             {
@@ -177,6 +185,17 @@ namespace RetracBoost
         {
             lastServer = null;
             ServerStatusReset();
+            var _ = RefreshServerLockAsync();       // gelernte Server erst jetzt sperren - nie mitten im Match
+        }
+
+        /// <summary>Schreibt die Server-Lock-Regeln neu, wenn neue Server gelernt wurden, sich der Spielpfad oder die Datenbasis geändert hat.</summary>
+        async Task RefreshServerLockAsync()
+        {
+            if (!Admin.IsElevated || sequence || rowServerLock.Busy) return;
+            bool stale = await Task.Run(() => { try { return serverLock.NeedsRefresh; } catch { return false; } });
+            if (!stale) return;
+            await RunOne(rowServerLock, true);
+            UpdateRetracMaster();
         }
 
         async Task RefreshRowAsync(Row row)
@@ -257,7 +276,10 @@ namespace RetracBoost
                 ServerStats.Text = L.T("Server gefunden, messe …", "Server found, measuring …");
                 var info = await ServerFinder.Describe(peer, CancellationToken.None);
                 lastServer = info;
-                ShowServer(info);
+                var verdict = ServerLockData.Judge(info);
+                // Nachweislich fremde Server merkt sich der Server-Lock; gesperrt wird erst nach dem Match.
+                if (verdict.Spot == ServerSpot.Elsewhere && verdict.Sure && serverLock.WeApplied) ServerLockTweak.Learn(info.Ip);
+                ShowServer(info, verdict);
             }
             catch (Exception ex)
             {
@@ -270,7 +292,7 @@ namespace RetracBoost
             }
         }
 
-        void ShowServer(ServerInfo s)
+        void ShowServer(ServerInfo s, ServerVerdict verdict)
         {
             Func<double, string> ms = v => v.ToString(v < 10 ? "0.0" : "0", CultureInfo.CurrentCulture) + " ms";
 
@@ -307,6 +329,20 @@ namespace RetracBoost
                 if (jump != null && by >= 15) route += L.T(", größter Sprung bei Station ", ", biggest jump at hop ") + jump.Ttl + " (+" + by.ToString("0", CultureInfo.CurrentCulture) + " ms)";
                 lines.Add(route);
             }
+
+            if (verdict.Spot == ServerSpot.Frankfurt)
+                lines.Add(L.T("Standort: Frankfurt ✓", "Location: Frankfurt ✓") + (verdict.Sure ? "" : L.T(" (geschätzt)", " (estimated)")) + " · " + verdict.Reason);
+            else if (verdict.Spot == ServerSpot.Elsewhere)
+            {
+                string what = L.T("Standort: NICHT Frankfurt ✗ · ", "Location: NOT Frankfurt ✗ · ") + verdict.Reason;
+                if (!verdict.Sure) what += L.T(" · nur per Ping geschätzt, wird nicht gesperrt", " · estimated from ping only, not blocked");
+                else if (serverLock.WeApplied) what += L.T(" · Server-Lock sperrt ihn nach diesem Match", " · server lock blocks it after this match");
+                else what += L.T(" · Server-Lock einschalten, um solche Server zu sperren", " · turn on the server lock to block servers like this");
+                lines.Add(what);
+            }
+            else
+                lines.Add(L.T("Standort: unbekannt · ", "Location: unknown · ") + verdict.Reason);
+
             ServerStats.Text = string.Join("\n", lines);
             ServerUse.IsEnabled = s.PingMs.HasValue || s.ViaHopAddress != null;
         }

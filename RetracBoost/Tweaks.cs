@@ -176,6 +176,8 @@ namespace RetracBoost
     //    - 64 KB Socket-Puffer gegen Paketverlust in Endgame-Fights
     //    - TCP-Nagle & Delayed-ACKs auf allen Adaptern aus, Port-Pool erweitert
     //    - MMCSS-Netzwerkdrosselung aus, Spiele-Scheduler auf High + Latency Sensitive
+    //    - UDP Receive Offload (URO, Windows 11) aus: eingehende Spielpakete werden nicht mehr gebündelt,
+    //      sondern einzeln und sofort zugestellt (weniger Jitter)
     // ------------------------------------------------------------------------------------------
     sealed class NetStackTweak : Tweak
     {
@@ -183,12 +185,13 @@ namespace RetracBoost
         const string TcpGlobal = @"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters";
         const string Afd = @"SYSTEM\CurrentControlSet\Services\AFD\Parameters";
         const string Mm = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile";
+        const string UroKey = "net.uro";      // bewusst ohne "bk|net|"-Präfix: RegStore räumt diese Schlüssel sonst weg
 
         public override string Id { get { return "net"; } }
         public override string Title { get { return L.T("Ping-Booster (Netzwerk & UDP)", "Ping booster (network & UDP)"); } }
         public override string Summary
         {
-            get { return L.T("UDP-Fastpath (1500 B), keine verzögerten ACKs, Drosselung aus & Echtzeit-Spiele-Scheduler", "UDP fast-path (1500 B), no delayed ACKs, throttling off & low-latency game scheduler"); }
+            get { return L.T("UDP-Fastpath (1500 B), UDP-Bündelung aus, keine verzögerten ACKs, Drosselung aus & Echtzeit-Spiele-Scheduler", "UDP fast-path (1500 B), UDP coalescing off, no delayed ACKs, throttling off & low-latency game scheduler"); }
         }
 
         static List<RegItem> Items()
@@ -225,9 +228,24 @@ namespace RetracBoost
         }
 
         public override bool IsApplied() { return RegStore.AllSet(Items()); }
-        public override void Apply() { RegStore.Apply(Id, Items()); }
-        public override void Revert() { RegStore.Revert(Id, Items()); }
-        public override string Snapshot() { return Snap(Items()); }
+        public override bool WeApplied { get { return RegStore.HasBackup(Id) || Store.Get(UroKey) != null; } }
+
+        public override void Apply()
+        {
+            RegStore.Apply(Id, Items());
+            // URO gibt es erst ab Windows 11 / Server 2022 - auf älteren Systemen schlägt der Befehl fehl und es bleibt alles, wie es ist.
+            if (Store.Get(UroKey) == null && Sh.Netsh("int udp set global uro=disabled").Ok) Store.Set(UroKey, "1");
+        }
+
+        public override void Revert()
+        {
+            RegStore.Revert(Id, Items());
+            if (Store.Get(UroKey) == null) return;
+            Sh.Netsh("int udp set global uro=enabled");
+            Store.Set(UroKey, null);
+        }
+
+        public override string Snapshot() { return Snap(Items()) + "\nuro=" + (Store.Get(UroKey) ?? "-"); }
     }
 
     // ------------------------------------------------------------------------------------------
@@ -237,19 +255,33 @@ namespace RetracBoost
     {
         const string ClassPath = @"SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}";
 
-        // Standard- und gängige Herstellerschlüssel; "0" bedeutet überall "aus".
-        static readonly string[] Keywords =
+        // Standard- und gängige Herstellerschlüssel mit Zielwert. Gesetzt wird nur, was der Treiber
+        // selbst als gültige Auswahl anbietet (Aufzählung oder Zahlenbereich).
+        static readonly string[,] Keywords =
         {
-            "*InterruptModeration", "ITR", "*PacketCoalescing", "*EEE", "AdvancedEEE", "EnableGreenEthernet",
-            "GigaLite", "PowerSavingMode", "ULPMode", "*SelectiveSuspend", "*FlowControl",
-            "*LsoV2IPv4", "*LsoV2IPv6", "*RscIPv4", "*RscIPv6"
+            // Interrupts & Bündelung: jedes Paket sofort an die CPU
+            { "*InterruptModeration", "0" }, { "ITR", "0" }, { "*PacketCoalescing", "0" },
+            { "TxIntDelay", "0" }, { "RxIntDelay", "0" }, { "TxAbsIntDelay", "0" }, { "RxAbsIntDelay", "0" },
+            // Energiesparen: Karte taktet nie herunter und schläft nicht ein
+            { "*EEE", "0" }, { "AdvancedEEE", "0" }, { "EEELinkAdvertisement", "0" }, { "EnableGreenEthernet", "0" },
+            { "GigaLite", "0" }, { "PowerSavingMode", "0" }, { "ULPMode", "0" }, { "*SelectiveSuspend", "0" },
+            { "AutoPowerSaveModeEnabled", "0" }, { "EnableConnectedPowerGating", "0" }, { "EnableDynamicPowerGating", "0" },
+            { "ReduceSpeedOnPowerDown", "0" }, { "*DeviceSleepOnDisconnect", "0" },
+            // Kein Pausieren des Datenstroms, keine großen Sammel-Pakete
+            { "*FlowControl", "0" }, { "*LsoV2IPv4", "0" }, { "*LsoV2IPv6", "0" }, { "*RscIPv4", "0" }, { "*RscIPv6", "0" },
+            // Empfang auf mehrere CPU-Kerne verteilen
+            { "*RSS", "1" },
+            // WLAN (Intel u. a.): kein Energiesparen der Antennen, kein ständiges Suchen nach anderen Access Points
+            { "MIMOPowerSaveMode", "3" }, { "RoamAggressiveness", "0" }
         };
+
+        const int PnpNoPowerOff = 24;   // "Computer kann das Gerät ausschalten, um Energie zu sparen" aus
 
         public override string Id { get { return "adapter"; } }
         public override string Title { get { return L.T("Netzwerkkarte (Low-Latency)", "Network adapter (low-latency)"); } }
         public override string Summary
         {
-            get { return L.T("Interrupt-Moderation, Paket-Bündelung & Energiesparen aus · Karte verbindet kurz neu", "Interrupt moderation, packet coalescing & power saving off · adapter reconnects briefly"); }
+            get { return L.T("Interrupt-Moderation, Paket-Bündelung, Energiesparen & WLAN-Roaming aus, RSS an · Karte verbindet kurz neu", "Interrupt moderation, packet coalescing, power saving & Wi-Fi roaming off, RSS on · adapter reconnects briefly"); }
         }
         public override string BusyText { get { return L.T("Karte wird neu verbunden …", "Reconnecting adapter …"); } }
 
@@ -268,15 +300,29 @@ namespace RetracBoost
                 var nic = nics.FirstOrDefault(n => string.Equals(n.Id, inst, StringComparison.OrdinalIgnoreCase));
                 if (nic == null) continue;
 
-                foreach (var kw in Keywords)
+                for (int i = 0; i < Keywords.GetLength(0); i++)
                 {
-                    string ndi = path + @"\Ndi\params\" + kw;
-                    if (Reg.Get(ndi, "default") == null) continue;           // Treiber kennt die Option nicht
-                    if (Reg.Get(ndi + @"\enum", "0") == null) continue;     // "0" ist keine gültige Auswahl
-                    items.Add(new RegItem { Path = path, Name = kw, Kind = RegistryValueKind.String, Target = "0", Group = nic.Name });
+                    string kw = Keywords[i, 0], target = Keywords[i, 1];
+                    if (!Accepts(path + @"\Ndi\params\" + kw, target)) continue;
+                    items.Add(new RegItem { Path = path, Name = kw, Kind = RegistryValueKind.String, Target = target, Group = nic.Name });
                 }
+                items.Add(new RegItem { Path = path, Name = "PnPCapabilities", Kind = RegistryValueKind.DWord, Target = PnpNoPowerOff, Group = nic.Name });
             }
             return items;
+        }
+
+        /// <summary>true, wenn der Treiber die Option kennt und den Zielwert als Auswahl oder im Zahlenbereich anbietet.</summary>
+        static bool Accepts(string ndi, string target)
+        {
+            if (Reg.Get(ndi, "default") == null) return false;                       // Treiber kennt die Option nicht
+            if (Reg.Get(ndi + @"\enum", target) != null) return true;               // gültige Auswahl
+            string type = (Convert.ToString(Reg.Get(ndi, "type"), CultureInfo.InvariantCulture) ?? "").ToLowerInvariant();
+            if (type != "int" && type != "long" && type != "word" && type != "dword") return false;
+            long t, min, max;
+            if (!long.TryParse(target, NumberStyles.Integer, CultureInfo.InvariantCulture, out t)) return false;
+            bool hasMin = long.TryParse(Convert.ToString(Reg.Get(ndi, "min"), CultureInfo.InvariantCulture), NumberStyles.Integer, CultureInfo.InvariantCulture, out min);
+            bool hasMax = long.TryParse(Convert.ToString(Reg.Get(ndi, "max"), CultureInfo.InvariantCulture), NumberStyles.Integer, CultureInfo.InvariantCulture, out max);
+            return (!hasMin || t >= min) && (!hasMax || t <= max);
         }
 
         /// <summary>Aktueller Wert; hat der Treiber nichts geschrieben, gilt der Standardwert aus seiner Parameterliste.</summary>
@@ -286,9 +332,11 @@ namespace RetracBoost
             return v == null ? null : Convert.ToString(v, CultureInfo.InvariantCulture);
         }
 
+        static string Want(RegItem it) { return Convert.ToString(it.Target, CultureInfo.InvariantCulture); }
+
         public override bool IsApplied()
         {
-            return Items().All(it => Current(it) == "0");
+            return Items().All(it => Current(it) == Want(it));
         }
 
         public override string Snapshot()
@@ -298,7 +346,7 @@ namespace RetracBoost
 
         public override void Apply()
         {
-            var pending = Items().Where(it => Current(it) != "0").ToList();
+            var pending = Items().Where(it => Current(it) != Want(it)).ToList();
             var changed = RegStore.Apply(Id, pending);
             Restart(changed.Select(c => c.Group).Distinct().ToList());
         }
@@ -344,7 +392,30 @@ namespace RetracBoost
 
         public override string Id { get { return "power"; } }
         public override string Title { get { return L.T("Energiesparplan", "Power plan"); } }
-        public override string Summary { get { return L.T("Höchstleistung – kein Heruntertakten der CPU", "High performance – no CPU down-clocking"); } }
+        public override string Summary
+        {
+            get
+            {
+                return HasBattery()
+                    ? L.T("Höchstleistung – kein Heruntertakten der CPU", "High performance – no CPU down-clocking")
+                    : L.T("Ultimative Leistung – keine CPU-Schlafzustände, kein Heruntertakten", "Ultimate performance – no CPU sleep states, no down-clocking");
+            }
+        }
+
+        static bool? battery;
+
+        /// <summary>Notebook erkennen: dort bleibt es bei Höchstleistung, damit Akku und Temperatur im Rahmen bleiben.</summary>
+        static bool HasBattery()
+        {
+            if (battery.HasValue) return battery.Value;
+            try
+            {
+                using (var s = new System.Management.ManagementObjectSearcher("SELECT DeviceID FROM Win32_Battery"))
+                    battery = s.Get().Count > 0;
+            }
+            catch { battery = false; }
+            return battery.Value;
+        }
 
         static string Active()
         {
@@ -380,17 +451,34 @@ namespace RetracBoost
             if (IsApplied()) return;                       // schon Höchstleistung/Ultimate: nicht herabstufen
             if (cur != null && Store.Get(OrigKey) == null) Store.Set(OrigKey, cur);
 
+            if (!HasBattery() && ActivateCopy(Ultimate) == null) return;
+
             var r = Sh.PowerCfg("/setactive " + High);
             if (r.Ok) return;
 
             // Auf manchen Systemen (Modern Standby) existiert der Plan nicht - dann aus der Vorlage erzeugen.
-            var dup = Sh.PowerCfg("/duplicatescheme " + High);
+            string err = ActivateCopy(High);
+            if (err != null) throw new InvalidOperationException(L.T("Energiesparplan nicht verfügbar: ", "Power plan unavailable: ") + err);
+        }
+
+        /// <summary>Aktiviert eine (wiederverwendete oder neu angelegte) Kopie der Vorlage. null = Erfolg, sonst Fehlertext.</summary>
+        static string ActivateCopy(string template)
+        {
+            string ours = Store.Get(OursKey);
+            if (ours != null && Schemes().Contains(ours) && Sh.PowerCfg("/setactive " + ours).Ok) return null;
+
+            var dup = Sh.PowerCfg("/duplicatescheme " + template);
             var m = Guid.Match(dup.Out);
-            if (!dup.Ok || !m.Success) throw new InvalidOperationException(L.T("Energiesparplan nicht verfügbar: ", "Power plan unavailable: ") + r.Text);
+            if (!dup.Ok || !m.Success) return dup.Text;
             string created = m.Value.ToLowerInvariant();
             var set = Sh.PowerCfg("/setactive " + created);
-            if (!set.Ok) throw new InvalidOperationException(set.Text);
+            if (!set.Ok)
+            {
+                Sh.PowerCfg("/delete " + created);
+                return set.Text;
+            }
             Store.Set(OursKey, created);
+            return null;
         }
 
         static List<string> Schemes()
@@ -434,6 +522,10 @@ namespace RetracBoost
 
             var r = Sh.PowerCfg("/setactive " + target);
             if (!r.Ok) throw new InvalidOperationException(r.Text);
+
+            // Den selbst angelegten Plan wieder entfernen, damit sich keine Kopien ansammeln.
+            string ours = Store.Get(OursKey);
+            if (ours != null && ours != target && existing.Contains(ours)) Sh.PowerCfg("/delete " + ours);
             Store.Set(OrigKey, null);
             Store.Set(OursKey, null);
         }

@@ -28,6 +28,7 @@ namespace RetracBoost
         public string Location;          // Standort aus den Routernamen vor dem Server (z. B. OVH-Rechenzentrum)
         public double? PingMs;           // direkter ICMP-Ping zum Server
         public double? ViaHopMs;         // Fallback: letzter antwortender Router vor dem Server
+        public double? FrankfurtRefMs;   // Vergleich: TCP-Laufzeit zu AWS Frankfurt (eu-central-1)
         public string ViaHopAddress;
         public List<Hop> Route = new List<Hop>();
     }
@@ -154,9 +155,24 @@ namespace RetracBoost
                 if (lastHop != null) { info.ViaHopMs = lastHop.Avg; info.ViaHopAddress = lastHop.Address; }
             }
 
+            info.FrankfurtRefMs = await FrankfurtReference(ct);
             info.Provider = ProviderOf(info.HostName);
             if (info.Provider == "OVHcloud") info.Location = OvhSiteFromRoute(info.Route);
             return info;
+        }
+
+        /// <summary>Median aus drei TCP-Handshakes zu AWS Frankfurt - Maßstab, ob ein Server "Frankfurt-nah" ist.</summary>
+        static async Task<double?> FrankfurtReference(CancellationToken ct)
+        {
+            var ip = await Probe.Resolve("ec2.eu-central-1.amazonaws.com");
+            if (ip == null) return null;
+            var vals = new List<double>();
+            for (int i = 0; i < 3; i++)
+            {
+                var v = await Probe.Tcp(ip, ct);
+                if (v.HasValue) vals.Add(v.Value);
+            }
+            return vals.Count > 0 ? (double?)Probe.Median(vals) : null;
         }
 
         static string ProviderOf(string host)
