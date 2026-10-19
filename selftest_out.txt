@@ -1,0 +1,73 @@
+﻿Retrac Boost selftest  2026-10-18T15:45:02
+OS Microsoft Windows NT 10.0.26200.0 | elevated=False | apply=False
+
+[Adapter]
+  Radmin VPN | Famatech Radmin VPN Ethernet Adapter | physical=False | ip=26.202.233.235 | dns=fec0:0:0:ffff::1%1,fec0:0:0:ffff::2%1,fec0:0:0:ffff::3%1
+  Ethernet | Realtek Gaming 2.5GbE Family Controller | physical=True | ip=192.168.1.50 | dns=192.168.1.1
+  PASS  mindestens ein aktiver Adapter mit Gateway
+  primär (Route ins Internet): Ethernet
+  PASS  primärer Adapter ist eine echte Netzwerkkarte mit IPv4
+
+[Ping]
+  1.1.1.1 -> mode=Icmp replies=4/4 avg=3,0 ms
+  PASS  Ping 1.1.1.1
+  ec2.eu-central-1.amazonaws.com -> mode=Tcp replies=4/4 avg=14,9 ms
+  PASS  Ping ec2.eu-central-1.amazonaws.com
+
+[DNS-Messung]
+  Router 192.168.1.1          5,3 ms
+  Cloudflare                  5,4 ms
+  Google                      21,8 ms
+  Quad9                       18,5 ms
+  OpenDNS                     20,6 ms
+  Entscheidung: aktuellen DNS behalten
+  PASS  mindestens zwei Resolver beantworten Abfragen
+
+[Regionstest]
+  Europa                15 ms
+  North America East    117 ms
+  Naher Osten           127 ms
+  North America West    159 ms
+  South Africa          163 ms
+  Asien                 242 ms
+  Ozeanien              315 ms
+  PASS  mindestens fünf Regionen messbar
+  PASS  Europa liegt unter 120 ms (Plausibilität)
+
+[Traceroute -> 1.1.1.1]
+   1     0,4 ms  fritz.box  (192.168.1.1)  [privat]
+   2     5,6 ms  213.220.145.1
+   3     2,7 ms  212.91.228.92
+   4     2,9 ms  212.91.228.65
+   5     3,9 ms  79.140.127.231
+   6     3,3 ms  cloudflare.bcix.de  (193.178.185.17)
+   7     7,2 ms  162.158.112.33
+   8     3,0 ms  one.one.one.one  (1.1.1.1)
+  PASS  Route erreicht das Ziel
+  PASS  erster Hop ist der Router im Heimnetz
+
+[MTU]
+  Pfad-MTU: 1492
+  PASS  Pfad-MTU liegt im gültigen Bereich
+
+[Zustand]
+  Ping-Booster (Netzwerk & UDP)      applied=True  | UDP-Fastpath (1500 B), keine verzögerten ACKs, Drosselung aus & Echtzeit-Spiele-Scheduler
+  Netzwerkkarte (Low-Latency)        applied=True  | Interrupt-Moderation, Paket-Bündelung & Energiesparen aus · Karte verbindet kurz neu
+  Energiesparplan                    applied=True  | Höchstleistung – kein Heruntertakten der CPU
+  FPS-Booster (High-End)             applied=True  | 0-Lag CPU/GPU Sync, Multi-Core RHI, DirectX 11 Async, 100 % CPU-Gaming-Fokus, Low-Latency & RAM-Flush
+  DNS                                applied=True  | Dein DNS (Router 192.168.1.1) ist mit 5,3 ms bereits schnell
+  selftest-game                      applied=False  | RetracBoostSelfTest.exe · DSCP 46 + CPU-, I/O- & RAM-Priorität hoch
+  TCP-Feintuning                     applied=True  | Empfangsfenster-Autotuning auf Normal, Paket-Zusammenfassung (RSC) aus
+  Hintergrund pausieren              applied=False  | Windows Update, BITS und Übermittlungsoptimierung (P2P-Upload) aus – bis du es wieder ausschaltest
+  Timer-Auflösung 0,5 ms             applied=True  | Systemuhr bleibt fein getaktet, solange Retrac Boost läuft · einmaliger Neustart nötig
+  Mit Windows starten                applied=True  | Startet minimiert beim Anmelden, ohne UAC-Abfrage
+  Paketgröße (MTU)                   applied=True  | MTU auf 1500 gesetzt
+  ogfn                               applied=False  | RetracBoostSelfTest2.exe · DSCP 46 + CPU-, I/O- & RAM-Priorität hoch
+  Bester Server-Lock (Frankfurt 100 %) applied=True  | Aktiv: 302 Ausweich-IP-Bereiche gesperrt · Nur Frankfurt (eu-central-1) erlaubt
+  Potato-Grafik (wie EM Tweaks)      applied=False  | NVIDIA LOD Bias 0x78 Clay + EM-Tweaks Clay/Potato-Grafik · kostenlos
+  Vollbild-Optimierung aus           applied=False  | Spiel läuft direkt ohne zusätzliche Fenster-Komposition
+  dvr                                applied=False  | dvr
+  Mausbeschleunigung aus             applied=True  | Gleiche Mausbewegung ergibt immer die gleiche Zeigerbewegung
+  Render-Verzögerung (experimentell) applied=True  | r.OneFrameThreadLag=0 · weniger Eingabe-Delay, kann etwas FPS kosten · gilt ab nächstem Spielstart
+
+ERGEBNIS: alles bestanden

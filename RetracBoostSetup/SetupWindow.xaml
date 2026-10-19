@@ -1,0 +1,833 @@
+<Window x:Class="RetracBoostSetup.SetupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Retrac Boost · Full Custom Setup" Width="820" Height="640"
+        WindowStartupLocation="CenterScreen" WindowStyle="None"
+        AllowsTransparency="True" Background="Transparent"
+        ResizeMode="CanMinimize"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Ideal">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="Bg" Color="#0A0D14"/>
+        <SolidColorBrush x:Key="Surface" Color="#111520"/>
+        <SolidColorBrush x:Key="Raised" Color="#161C2B"/>
+        <SolidColorBrush x:Key="Hover" Color="#1E263A"/>
+        <SolidColorBrush x:Key="Line" Color="#202738"/>
+        <SolidColorBrush x:Key="LineStrong" Color="#2D3850"/>
+        <SolidColorBrush x:Key="Text" Color="#F0F3F9"/>
+        <SolidColorBrush x:Key="Muted" Color="#8B94A7"/>
+        <SolidColorBrush x:Key="Accent" Color="#00F5A0"/>
+        <SolidColorBrush x:Key="AccentInk" Color="#032517"/>
+        <SolidColorBrush x:Key="AccentSoft" Color="#0E2D22"/>
+        <SolidColorBrush x:Key="Warn" Color="#FBBF24"/>
+        <SolidColorBrush x:Key="Bad" Color="#F87171"/>
+
+        <!-- Eleganter leuchtender Statuspunkt (Static Glow, 0.0% CPU) -->
+        <Style x:Key="PulsingDot" TargetType="Ellipse">
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#00F5A0" BlurRadius="6" ShadowDepth="0" Opacity="0.55"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Schmale dunkle Scrollleiste -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="Transparent" Width="8">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0" Focusable="False"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0" Focusable="False"/>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border CornerRadius="3" Background="{StaticResource LineStrong}" Margin="2,0"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Schalter mit echter Federungs-Animation (BackEase Bounce) & Glow -->
+        <Style x:Key="Switch" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Width="46" Height="25" Background="Transparent">
+                            <!-- Track -->
+                            <Border x:Name="Track" CornerRadius="12.5" Background="#1D2433" BorderBrush="#2A354A" BorderThickness="1"/>
+
+                            <!-- Thumb mit Federungs-Animation -->
+                            <Border x:Name="Thumb" Width="19" Height="19" Margin="3,0,0,0" HorizontalAlignment="Left"
+                                    CornerRadius="9.5" Background="#8E9CB2">
+                                <Border.RenderTransform>
+                                    <TranslateTransform x:Name="Shift" X="0"/>
+                                </Border.RenderTransform>
+                                <Border.Effect>
+                                    <DropShadowEffect Color="#000000" BlurRadius="5" ShadowDepth="1" Opacity="0.4"/>
+                                </Border.Effect>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#00F5A0" Offset="0"/>
+                                            <GradientStop Color="#00D287" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="Track" Property="BorderBrush" Value="#00F5A0"/>
+                                <Setter TargetName="Thumb" Property="Background" Value="#FFFFFF"/>
+                                <Setter TargetName="Track" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#00F5A0" BlurRadius="12" ShadowDepth="0" Opacity="0.45"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Shift" Storyboard.TargetProperty="X" To="21" Duration="0:0:0.22">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <BackEase Amplitude="0.32" EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Shift" Storyboard.TargetProperty="X" To="0" Duration="0:0:0.22">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <BackEase Amplitude="0.32" EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Track" Property="BorderBrush" Value="#495B7A"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.35"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Primärer Aktions-Button mit Scale-Animation & Emerald Glow -->
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource AccentInk}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="11" Height="44" Padding="24,0"
+                                BorderBrush="Transparent" BorderThickness="1">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="BtnScale" CenterX="80" CenterY="22" ScaleX="1.0" ScaleY="1.0"/>
+                            </Border.RenderTransform>
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#00F5A0" Offset="0"/>
+                                    <GradientStop Color="#00D287" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border.Effect>
+                                <DropShadowEffect Color="#00F5A0" BlurRadius="18" ShadowDepth="1" Direction="270" Opacity="0.4"/>
+                            </Border.Effect>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"
+                                              TextElement.FontWeight="Bold" TextElement.FontSize="13.5"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.95"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="BtnScale" Storyboard.TargetProperty="ScaleX" To="1.02" Duration="0:0:0.12"/>
+                                            <DoubleAnimation Storyboard.TargetName="BtnScale" Storyboard.TargetProperty="ScaleY" To="1.02" Duration="0:0:0.12"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="BtnScale" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.12"/>
+                                            <DoubleAnimation Storyboard.TargetName="BtnScale" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.12"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.82"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="BtnScale" Storyboard.TargetProperty="ScaleX" To="0.98" Duration="0:0:0.06"/>
+                                            <DoubleAnimation Storyboard.TargetName="BtnScale" Storyboard.TargetProperty="ScaleY" To="0.98" Duration="0:0:0.06"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Raised}"/>
+                                <Setter TargetName="Bd" Property="Effect" Value="{x:Null}"/>
+                                <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Sekundärer Button mit Glassmorphismus & Hover-Accent -->
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource Text}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="10" Height="40" Padding="18,0" Background="{StaticResource Raised}"
+                                BorderBrush="{StaticResource LineStrong}" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"
+                                              TextElement.FontWeight="SemiBold" TextElement.FontSize="12.5"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Hover}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Schnellprofil-Pille mit Micro-Scale & Border Glow -->
+        <Style x:Key="ProfilePill" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource Text}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="8" Padding="12,7" Background="{StaticResource Raised}"
+                                BorderBrush="{StaticResource LineStrong}" BorderThickness="1" Margin="0,0,8,6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"
+                                              TextElement.FontSize="11.5" TextElement.FontWeight="SemiBold"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Hover}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Potato-Stufen-Auswahlkarte -->
+        <Style x:Key="PotatoCard" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Foreground" Value="{StaticResource Text}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="CardBd" CornerRadius="10" Padding="12,9" Margin="3"
+                                Background="{StaticResource Raised}" BorderBrush="{StaticResource LineStrong}" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CardBd" Property="Background" Value="{StaticResource Hover}"/>
+                                <Setter TargetName="CardBd" Property="BorderBrush" Value="#38BDF8"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CardBd" Property="Background" Value="{StaticResource AccentSoft}"/>
+                                <Setter TargetName="CardBd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Fenster-Knopf oben rechts -->
+        <Style x:Key="WinBtn" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Width="34" Height="28" CornerRadius="6" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"
+                                              TextElement.FontSize="13" TextElement.FontWeight="SemiBold"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Raised}"/>
+                                <Setter Property="Foreground" Value="{StaticResource Text}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- Haupt-Rahmen mit abgerundeten Ecken & Glassmorphismus -->
+    <Border CornerRadius="16" Background="#0A0D14" BorderBrush="#242C3F" BorderThickness="1" ClipToBounds="True">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="68"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="72"/>
+            </Grid.RowDefinitions>
+
+            <!-- Ambient Atmospheric Mesh Lighting Orbs -->
+            <Canvas Grid.RowSpan="4" IsHitTestVisible="False" ClipToBounds="True">
+                <!-- Top-Left Neon Emerald Atmosphere Glow -->
+                <Ellipse Width="650" Height="450" Canvas.Left="-180" Canvas.Top="-160" Opacity="0.20">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                            <GradientStop Color="#00F5A0" Offset="0"/>
+                            <GradientStop Color="#00B875" Offset="0.45"/>
+                            <GradientStop Color="Transparent" Offset="1"/>
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+
+                <!-- Top-Right Cyan Atmosphere Glow -->
+                <Ellipse Width="550" Height="400" Canvas.Right="-160" Canvas.Top="-140" Opacity="0.14">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                            <GradientStop Color="#38BDF8" Offset="0"/>
+                            <GradientStop Color="Transparent" Offset="1"/>
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+
+                <!-- Bottom Deep Emerald Atmosphere Glow -->
+                <Ellipse Width="700" Height="360" Canvas.Left="100" Canvas.Bottom="-180" Opacity="0.12">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                            <GradientStop Color="#10B981" Offset="0"/>
+                            <GradientStop Color="Transparent" Offset="1"/>
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+            </Canvas>
+
+            <!-- 1. Custom Titelleiste (ziehbar) -->
+            <Border Grid.Row="0" Background="{StaticResource Surface}" CornerRadius="13,13,0,0"
+                    BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1"
+                    MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid Margin="22,0,16,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Logo & Titel -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Width="38" Height="38" CornerRadius="11" Background="{StaticResource AccentSoft}"
+                                BorderBrush="{StaticResource Accent}" BorderThickness="1.2" Margin="0,0,13,0">
+                            <Grid>
+                                <Ellipse Width="13" Height="13" Fill="{StaticResource Accent}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                         Style="{StaticResource PulsingDot}"/>
+                            </Grid>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock x:Name="HeaderTitle" Text="Retrac Boost" FontSize="16.5" FontWeight="Bold" Foreground="{StaticResource Text}"/>
+                                <Border CornerRadius="6" Background="{StaticResource AccentSoft}" BorderBrush="{StaticResource Accent}" BorderThickness="1" Padding="7,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Width="6" Height="6" Fill="{StaticResource Accent}" Margin="0,0,5,0" Style="{StaticResource PulsingDot}"/>
+                                        <TextBlock x:Name="BadgeText" Text="FULL CUSTOM SETUP" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource Accent}"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock x:Name="HeaderSub" Text="Ping-Booster · Unsichtbarer FPS-Booster · Frankfurt Server-Lock · Potato-Grafik"
+                                       FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Fenstersteuerung -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource WinBtn}" Content="—" Click="Minimize_Click" Margin="0,0,4,0"/>
+                        <Button Style="{StaticResource WinBtn}" Content="✕" Click="Close_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 2. Schritt-Anzeige (Leiste unter dem Header) -->
+            <Border x:Name="StepBar" Grid.Row="1" Background="{StaticResource Bg}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1" Padding="24,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border x:Name="StepPill1" Grid.Column="0" CornerRadius="8" Padding="12,7" Margin="0,0,6,0"
+                            Background="{StaticResource AccentSoft}" BorderBrush="{StaticResource Accent}" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="StepNum1" Text="1" FontWeight="Bold" Foreground="{StaticResource Accent}" Margin="0,0,8,0"/>
+                            <TextBlock x:Name="StepLbl1" Text="Zielordner &amp; Verknüpfungen" FontWeight="SemiBold" Foreground="{StaticResource Text}" FontSize="12"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="StepPill2" Grid.Column="1" CornerRadius="8" Padding="12,7" Margin="3,0,3,0"
+                            Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="StepNum2" Text="2" FontWeight="Bold" Foreground="{StaticResource Muted}" Margin="0,0,8,0"/>
+                            <TextBlock x:Name="StepLbl2" Text="Custom Boost &amp; Grafik" FontWeight="SemiBold" Foreground="{StaticResource Muted}" FontSize="12"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="StepPill3" Grid.Column="2" CornerRadius="8" Padding="12,7" Margin="6,0,0,0"
+                            Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="StepNum3" Text="3" FontWeight="Bold" Foreground="{StaticResource Muted}" Margin="0,0,8,0"/>
+                            <TextBlock x:Name="StepLbl3" Text="Installation &amp; Start" FontWeight="SemiBold" Foreground="{StaticResource Muted}" FontSize="12"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- 3. Haupt-Inhalt (Seiten 1–3 + Uninstall) -->
+            <Grid Grid.Row="2" Margin="24,16,24,12">
+
+                <!-- ==================== SEITE 1: ZIELORT & VERKNÜPFUNGEN ==================== -->
+                <ScrollViewer x:Name="PageStep1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock x:Name="S1Title" Text="Wohin soll Retrac Boost installiert werden?"
+                                   FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                        <TextBlock x:Name="S1Desc" Text="Wähle den Zielordner und lege fest, welche Verknüpfungen und Automatik-Funktionen eingerichtet werden sollen."
+                                   FontSize="12" Foreground="{StaticResource Muted}" Margin="0,3,0,14"/>
+
+                        <!-- Zielordner-Karte -->
+                        <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="11" Padding="16,14" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock x:Name="LblPathHeader" Text="Installationsordner" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Muted}" Margin="0,0,0,8"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource Raised}" BorderBrush="{StaticResource LineStrong}" BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="0,0,10,0">
+                                        <TextBox x:Name="InstallPathBox" Background="Transparent" BorderThickness="0"
+                                                 Foreground="{StaticResource Text}" CaretBrush="{StaticResource Accent}"
+                                                 FontSize="13" VerticalContentAlignment="Center"
+                                                 TextChanged="InstallPathBox_TextChanged"/>
+                                    </Border>
+                                    <Button x:Name="BrowseBtn" Grid.Column="1" Style="{StaticResource SecondaryButton}" Content="Durchsuchen …" Click="BrowseBtn_Click"/>
+                                </Grid>
+                                <TextBlock x:Name="DiskSpaceText" Text="Benötigter Speicherplatz: ~1,2 MB" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="2,8,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Verknüpfungen & Systemstart -->
+                        <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="11" Padding="16,6">
+                            <StackPanel>
+                                <!-- Desktop Shortcut -->
+                                <Grid Margin="0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock x:Name="LblDesktop" Text="Desktop-Verknüpfung erstellen" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                        <TextBlock x:Name="DescDesktop" Text="Legt „Retrac Boost“ direkt auf deinem Desktop ab" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkDesktop" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Border Height="1" Background="{StaticResource Line}"/>
+
+                                <!-- Start Menu Shortcut -->
+                                <Grid Margin="0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock x:Name="LblStartMenu" Text="Startmenü-Eintrag &amp; Windows-Uninstaller registrieren" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                        <TextBlock x:Name="DescStartMenu" Text="Trägt Retrac Boost im Startmenü und unter „Installierte Apps“ ein" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkStartMenu" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Border Height="1" Background="{StaticResource Line}"/>
+
+                                <!-- Auto-Boost on Game Start -->
+                                <Grid Margin="0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock x:Name="LblAutoBoost" Text="Auto-Boost &amp; RAM-Clean beim Spielstart" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                        <TextBlock x:Name="DescAutoBoost" Text="Aktiviert Ping-/FPS-Boost und leert die Windows-RAM-Standby-Liste automatisch bei Spielstart" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkAutoBoost" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Border Height="1" Background="{StaticResource Line}"/>
+
+                                <!-- Windows Autostart -->
+                                <Grid Margin="0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock x:Name="LblAutoStart" Text="Mit Windows automatisch im Hintergrund starten" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                        <TextBlock x:Name="DescAutoStart" Text="Startet Retrac Boost minimiert beim PC-Start, damit du nie daran denken musst" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkAutoStart" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="False" VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ==================== SEITE 2: FULL CUSTOM BOOST & GRAFIK ==================== -->
+                <ScrollViewer x:Name="PageStep2" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Schnellprofile -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock x:Name="S2Title" Text="Stelle dein eigenes Custom-Setup zusammen"
+                                           FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                <TextBlock x:Name="S2Desc" Text="Wähle ein Schnellprofil oder bestimme jeden Booster und die Potato-Grafik-Stufe selbst."
+                                           FontSize="12" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <WrapPanel Margin="0,0,0,12">
+                            <Button x:Name="BtnProfEm" Style="{StaticResource ProfilePill}" Content="★ EM Tweaks + Full Boost (Empfohlen)" Click="ProfileEm_Click"/>
+                            <Button x:Name="BtnProfStealth" Style="{StaticResource ProfilePill}" Content="Unsichtbarer FPS + Ping Boost (Original-Grafik)" Click="ProfileStealth_Click"/>
+                            <Button x:Name="BtnProfUltra" Style="{StaticResource ProfilePill}" Content="Max FPS (Stark Potato)" Click="ProfileUltra_Click"/>
+                            <Button x:Name="BtnProfClean" Style="{StaticResource ProfilePill}" Content="Nur App installieren (Keine Tweaks)" Click="ProfileNone_Click"/>
+                        </WrapPanel>
+
+                        <!-- Booster-Auswahl -->
+                        <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="11" Padding="16,6" Margin="0,0,0,12">
+                            <StackPanel>
+                                <!-- Ping Booster -->
+                                <Grid Margin="0,7">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock x:Name="LblPingBoost" Text="Ping- &amp; Netzwerk-Booster (100% aktiv)" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                        <TextBlock x:Name="DescPingBoost" Text="Nagle aus (TcpNoDelay), AFD-Fast-Datagram (1500 B), Netzwerk-Drosselung aus, QoS DSCP 46, Netzwerkkarte Interrupt-Moderation &amp; Stromsparen aus"
+                                                   FontSize="11.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkPingBoost" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Border Height="1" Background="{StaticResource Line}"/>
+
+                                <!-- Unsichtbarer FPS Booster -->
+                                <Grid Margin="0,7">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock x:Name="LblFpsBoost" Text="Unsichtbarer FPS-Booster &amp; Höchstleistung" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                        <TextBlock x:Name="DescFpsBoost" Text="NVIDIA Max Performance, Low Latency Mode On, Threaded Optimization, Win32PrioritySeparation 0x26, HAGS, DWM-Latenz, Shader-Cache &amp; RAM-Purge"
+                                                   FontSize="11.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkFpsBoost" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Border Height="1" Background="{StaticResource Line}"/>
+
+                                <!-- Retrac / Fortnite Latenz-Paket -->
+                                <Grid Margin="0,7">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock x:Name="LblRetracPack" Text="Retrac / Fortnite Latenz- &amp; Input-Paket" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                        <TextBlock x:Name="DescRetracPack" Text="CPU-/I/O-/RAM-Priorität Hoch, Vollbild-Optimierungen aus, Spielmodus an &amp; Xbox-DVR aus, 1:1 lineare Maus, Engine OneFrameThreadLag=0"
+                                                   FontSize="11.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkRetracPack" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Border Height="1" Background="{StaticResource Line}"/>
+
+                                <!-- Bester Server-Lock (Frankfurt 100 % · Wie ExitLag) -->
+                                <Grid Margin="0,7">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock x:Name="LblServerLock" Text="Bester Server-Lock (Frankfurt 100 % · Wie ExitLag)" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                            <Border CornerRadius="4" Background="{StaticResource AccentSoft}" BorderBrush="{StaticResource Accent}" BorderThickness="1" Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock Text="100% ROUTING" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource Accent}"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock x:Name="DescServerLock" Text="Sperrt 302 europäische Ausweich-Server (London, Paris, Dublin) in der Windows Firewall – zwingt Fortnite &amp; Retrac immer auf Frankfurt (eu-central-1, 3–15 ms)."
+                                                   FontSize="11.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkServerLock" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Potato-Grafik Stufen-Konfigurator -->
+                        <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="11" Padding="16,12">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock x:Name="LblPotatoHeader" Text="Potato-Grafik Stufe (wie EM Tweaks · inkl. Anti-Berg-Bug-Fix)"
+                                                   FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                        <TextBlock x:Name="PotatoSelectedInfo"
+                                                   Text="Mittel (+1,25 · EM Tweaks): Glatte Potato-Texturen, keine Schatten/Gras/Bloom, 100% feste Berge &amp; Klippen (Texturen Hoch + Sichtweite Weit)"
+                                                   FontSize="11.5" Foreground="{StaticResource Accent}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <UniformGrid Rows="2" Columns="3" Margin="-3,0,-3,0">
+                                    <RadioButton x:Name="RadPotOff" GroupName="PotatoGrp" Style="{StaticResource PotatoCard}" Checked="PotatoRadio_Checked" Tag="off">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="Aus (Original)" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Keine Grafikänderung" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton x:Name="RadPotStealth" GroupName="PotatoGrp" Style="{StaticResource PotatoCard}" Checked="PotatoRadio_Checked" Tag="stealth">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="Dezent (+0,375)" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Scharf · Nur Effekte aus" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton x:Name="RadPotClean" GroupName="PotatoGrp" Style="{StaticResource PotatoCard}" Checked="PotatoRadio_Checked" Tag="clean">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="Leicht (+1,0)" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Clean Potato · Kein Glitch" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton x:Name="RadPotMedium" GroupName="PotatoGrp" Style="{StaticResource PotatoCard}" IsChecked="True" Checked="PotatoRadio_Checked" Tag="medium">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="Mittel (+1,5 · EM)" FontWeight="SemiBold" FontSize="12" Foreground="{StaticResource Accent}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="EM Tweaks · Feste Berge" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton x:Name="RadPotStrong" GroupName="PotatoGrp" Style="{StaticResource PotatoCard}" Checked="PotatoRadio_Checked" Tag="strong">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="Stark (+3,0 · Clay)" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Runde Berge · Starker Clay" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton x:Name="RadPotUltra" GroupName="PotatoGrp" Style="{StaticResource PotatoCard}" Checked="PotatoRadio_Checked" Tag="ultra">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="Extrem (0x78 · 100% Clay)" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="100% Texturen weg (@Austvns)" FontSize="10.5" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ==================== SEITE 3: INSTALLATION & FORTSCHRITT ==================== -->
+                <Grid x:Name="PageStep3" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Fortschritts-Karte -->
+                    <Border Grid.Row="0" Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="11" Padding="18,16" Margin="0,0,0,12">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="ProgressStageText" Text="Installiere Retrac Boost …" FontSize="14.5" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                <TextBlock x:Name="ProgressPercentText" Grid.Column="1" Text="0 %" FontSize="14.5" FontWeight="Bold" Foreground="{StaticResource Accent}"/>
+                            </Grid>
+
+                            <Border Height="10" CornerRadius="5" Background="#141824" BorderBrush="#202738" BorderThickness="1" ClipToBounds="True">
+                                <Border x:Name="ProgressBarFill" HorizontalAlignment="Left" Width="0" CornerRadius="5">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#00F5A0" Offset="0"/>
+                                            <GradientStop Color="#00D287" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                </Border>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Live-Protokoll -->
+                    <Border Grid.Row="1" Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="11" Padding="16,12">
+                        <ScrollViewer x:Name="LogScroller" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl x:Name="LogItems">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="6" Padding="6,4" Margin="0,1" Background="Transparent">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="24"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Icon}" Foreground="{StaticResource Accent}" FontWeight="Bold" FontSize="12.5"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Message}" Foreground="{StaticResource Text}" TextWrapping="Wrap" FontSize="12"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+
+                    <!-- Abschluss-Optionen -->
+                    <Border x:Name="FinishCard" Grid.Row="2" Visibility="Collapsed"
+                            Background="{StaticResource AccentSoft}" BorderBrush="{StaticResource Accent}" BorderThickness="1"
+                            CornerRadius="11" Padding="16,12" Margin="0,12,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Name="FinishTitle" Text="Retrac Boost wurde erfolgreich eingerichtet!" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                <TextBlock x:Name="FinishSub" Text="Retrac Boost direkt beim Schließen des Setups starten" FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <CheckBox x:Name="ChkLaunchNow" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- ==================== SEITE 4: UNINSTALLER-MODUS ==================== -->
+                <StackPanel x:Name="PageUninstall" Visibility="Collapsed">
+                    <TextBlock x:Name="UninstTitle" Text="Retrac Boost deinstallieren"
+                               FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                    <TextBlock x:Name="UninstDesc" Text="Wähle aus, ob vor dem Entfernen auch alle vorgenommenen Netzwerk-, FPS- und Potato-Grafik-Tweaks auf den Windows-Standard zurückgesetzt werden sollen."
+                               FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,16"/>
+
+                    <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="11" Padding="16,8" Margin="0,0,0,14">
+                        <StackPanel>
+                            <Grid Margin="0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="Alle aktiven Tweaks auf Windows-Standard zurücksetzen" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                    <TextBlock Text="Stellt Originalwerte in Registry, NVIDIA-Treiberprofil, Engine.ini und GameUserSettings.ini wieder her"
+                                               FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <CheckBox x:Name="ChkUninstRevert" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
+                            </Grid>
+                            <Border Height="1" Background="{StaticResource Line}"/>
+                            <Grid Margin="0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="Gespeicherte Einstellungen &amp; Sicherungen löschen" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                    <TextBlock Text="Entfernt auch den Ordner C:\ProgramData\RetracBoost vollständig"
+                                               FontSize="11.5" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <CheckBox x:Name="ChkUninstPurgeData" Grid.Column="1" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="11" Padding="16,12">
+                        <StackPanel>
+                            <TextBlock Text="Installationsort:" FontSize="11.5" Foreground="{StaticResource Muted}"/>
+                            <TextBlock x:Name="UninstPathText" Text="C:\Program Files\RetracBoost" FontWeight="SemiBold" Foreground="{StaticResource Text}" Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+            </Grid>
+
+            <!-- 4. Fußzeile mit Zurück / Weiter / Installieren -->
+            <Border Grid.Row="3" Background="{StaticResource Surface}" CornerRadius="0,0,13,13"
+                    BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="24,0">
+                <Grid VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock x:Name="FooterHint" Grid.Column="0" Text="Retrac Boost v1.0.1 · 64-Bit Windows"
+                               FontSize="11.5" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
+
+                    <Button x:Name="BackBtn" Grid.Column="2" Style="{StaticResource SecondaryButton}"
+                            Content="← Zurück" Visibility="Collapsed" Margin="0,0,10,0" Click="BackBtn_Click"/>
+
+                    <Button x:Name="NextBtn" Grid.Column="3" Style="{StaticResource PrimaryButton}"
+                            Content="Weiter zu Custom Boost →" Click="NextBtn_Click"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

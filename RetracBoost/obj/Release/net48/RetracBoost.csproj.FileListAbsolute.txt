@@ -1,0 +1,14 @@
+C:\Retrac tools\RetracBoost\bin\RetracBoost.exe.config
+C:\Retrac tools\RetracBoost\bin\RetracBoost.exe
+C:\Retrac tools\RetracBoost\obj\Release\net48\RetracBoost.csproj.AssemblyReference.cache
+C:\Retrac tools\RetracBoost\obj\Release\net48\MainWindow.baml
+C:\Retrac tools\RetracBoost\obj\Release\net48\MainWindow.g.cs
+C:\Retrac tools\RetracBoost\obj\Release\net48\RetracBoost_MarkupCompile.cache
+C:\Retrac tools\RetracBoost\obj\Release\net48\RetracBoost.g.resources
+C:\Retrac tools\RetracBoost\obj\Release\net48\RetracBoost.GeneratedMSBuildEditorConfig.editorconfig
+C:\Retrac tools\RetracBoost\obj\Release\net48\RetracBoost.AssemblyInfoInputs.cache
+C:\Retrac tools\RetracBoost\obj\Release\net48\RetracBoost.AssemblyInfo.cs
+C:\Retrac tools\RetracBoost\obj\Release\net48\RetracBoost.csproj.CoreCompileInputs.cache
+C:\Retrac tools\RetracBoost\obj\Release\net48\RetracBoost.exe
+c:\Retrac tools\RetracBoost\bin\Release\net48\RetracBoost.exe.config
+c:\Retrac tools\RetracBoost\bin\Release\net48\RetracBoost.exe
