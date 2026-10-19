@@ -35,7 +35,7 @@ namespace RetracBoost
 
             RetracNote.Text = L.T("CPU-Priorität, Potato-Grafik und Engine-Änderung gelten ab dem nächsten Spielstart. Die Netzwerkkarte verbindet beim ersten Anwenden kurz neu – am besten vor dem Spiel. Jede Zeile lässt sich einzeln zurücknehmen.",
                                   "CPU priority, potato graphics and the engine change apply from the next game launch. The adapter reconnects briefly on first apply – best before gaming. Every row can be undone individually.");
-            PotatoHeader.Text = L.T("Potato-Grafik Stufe wählen (wie EM Tweaks, kostenlos)", "Choose potato graphics level (like EM Tweaks, free)");
+            PotatoHeader.Text = L.T("Potato-Grafik: Stufe wählen", "Potato graphics: choose level");
 
             SetChip(ChipLauncherDot, ChipLauncherText, false, L.T("Retrac-Launcher läuft", "Retrac launcher running"), L.T("Retrac-Launcher nicht gestartet", "Retrac launcher not running"));
             SetChip(ChipGameDot, ChipGameText, false, L.T("Spiel läuft", "Game running"), L.T("Spiel nicht gestartet", "Game not running"));

@@ -250,6 +250,34 @@
             </Setter>
         </Style>
 
+        <!-- Hauptknopf: grün mit dunkler Schrift (z. B. "Aktualisieren") -->
+        <Style x:Key="Primary" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource AccentInk}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="10" Padding="14,8" Background="{StaticResource Accent}"
+                                BorderBrush="{StaticResource Accent}" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="13"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#5CFFC4"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Kleiner Textknopf -->
         <Style x:Key="Ghost" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource Muted}"/>
@@ -638,7 +666,7 @@
 
                 <!-- Right Controls: Auto-Updater Pill Button -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button x:Name="UpdateBadgeButton" Style="{StaticResource UpdatePill}" Click="UpdateBadge_Click" ToolTip="Klicken für Updates &amp; Changelog">
+                    <Button x:Name="UpdateBadgeButton" Style="{StaticResource UpdatePill}" Click="UpdateBadge_Click" ToolTip="Updates und Änderungen">
                         <StackPanel Orientation="Horizontal">
                             <Ellipse x:Name="UpdateDot" Style="{StaticResource PulsingDot}" Width="8" Height="8" Fill="{StaticResource Accent}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <TextBlock x:Name="UpdateBadgeText" Text="Aktuell (v1.0.2)" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
@@ -1028,11 +1056,11 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <Border Width="36" Height="36" CornerRadius="10" Background="{StaticResource AccentSoft}" BorderBrush="{StaticResource Accent}" BorderThickness="1" Margin="0,0,12,0">
-                                <TextBlock Text="🚀" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBlock Text="↓" FontSize="18" FontWeight="Bold" Foreground="{StaticResource Accent}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock x:Name="ModalTitle" Text="Auto-Updater" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF"/>
-                                <TextBlock x:Name="ModalSubtitle" Text="Retrac Boost Versionen &amp; Neuerungen" FontSize="12" Foreground="{StaticResource Muted}"/>
+                                <TextBlock x:Name="ModalTitle" Text="Updates" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                <TextBlock x:Name="ModalSubtitle" Text="Versionen und Änderungen" FontSize="12" Foreground="{StaticResource Muted}"/>
                             </StackPanel>
                         </StackPanel>
                         <Button Grid.Column="1" Style="{StaticResource Ghost}" Content="✕" FontSize="14" Width="30" Height="30" Click="UpdateClose_Click"/>
@@ -1041,12 +1069,12 @@
                     <Border Grid.Row="1" Height="1" Background="{StaticResource Line}" Margin="0,0,0,12"/>
 
                     <!-- Modal Body / Content -->
-                    <TextBlock Grid.Row="2" x:Name="ModalStatusHeader" Text="Aktueller Status" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource Text}" Margin="0,0,0,6"/>
+                    <TextBlock Grid.Row="2" x:Name="ModalStatusHeader" Text="Noch nicht geprüft" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource Text}" Margin="0,0,0,6"/>
 
                     <!-- Scrollable Changelog Box -->
                     <Border Grid.Row="3" Background="{StaticResource Raised}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="10" Padding="12,10" Margin="0,0,0,10" MaxHeight="170">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                            <TextBlock x:Name="ModalChangelog" Text="Du verwendest bereits die neueste Version (v1.0.2) mit Frankfurt-Server-Lock und ultimativem FPS-Booster."
+                            <TextBlock x:Name="ModalChangelog" Text="Klick auf „Nach Updates suchen“."
                                        FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" LineHeight="17"/>
                         </ScrollViewer>
                     </Border>
@@ -1070,7 +1098,7 @@
                     <!-- Download Progress Bar (visible during update) -->
                     <StackPanel Grid.Row="5" x:Name="ModalProgressPanel" Visibility="Collapsed" Margin="0,0,0,14">
                         <Grid Margin="0,0,0,6">
-                            <TextBlock Text="Herunterladen &amp; Installieren..." FontSize="12" Foreground="{StaticResource Muted}"/>
+                            <TextBlock Text="Lade herunter …" FontSize="12" Foreground="{StaticResource Muted}"/>
                             <TextBlock x:Name="ModalProgressPercent" Text="0%" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Accent}" HorizontalAlignment="Right"/>
                         </Grid>
                         <ProgressBar x:Name="ModalProgressBar" Height="8" Minimum="0" Maximum="100" Value="0" Style="{StaticResource Bar}" Foreground="{StaticResource Accent}"/>
@@ -1079,7 +1107,7 @@
                     <!-- Action Buttons (Pinned permanently at bottom) -->
                     <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button x:Name="ModalCheckBtn" Style="{StaticResource Action}" Content="Nach Updates suchen" Margin="0,0,8,0" Click="UpdateCheckNow_Click"/>
-                        <Button x:Name="ModalActionBtn" Style="{StaticResource Action}" Background="{StaticResource AccentSoft}" BorderBrush="{StaticResource Accent}" Foreground="{StaticResource Accent}" FontWeight="SemiBold" Content="Schließen" Click="UpdateClose_Click"/>
+                        <Button x:Name="ModalActionBtn" Style="{StaticResource Action}" Content="Schließen" Click="UpdateClose_Click"/>
                     </StackPanel>
                 </Grid>
             </Border>

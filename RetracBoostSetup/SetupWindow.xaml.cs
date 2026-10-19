@@ -291,22 +291,22 @@ namespace RetracBoostSetup
             switch (selectedPotato)
             {
                 case "off":
-                    PotatoSelectedInfo.Text = "Aus (Original-Grafik): Keine Grafik-Änderung im Spiel – nur der unsichtbare FPS- & Ping-Booster arbeitet im Hintergrund.";
+                    PotatoSelectedInfo.Text = "Aus: Grafik bleibt, wie sie ist.";
                     break;
                 case "stealth":
-                    PotatoSelectedInfo.Text = "Dezent (+0,375): Scharfe Texturen & normale Hügel – schaltet nur Schatten, Gras, Bloom, AO & Nachbearbeitung für hohe FPS aus.";
+                    PotatoSelectedInfo.Text = "Dezent: Texturen bleiben scharf. Aus: Schatten, Gras, Bloom, Umgebungsverdeckung, Nachbearbeitung.";
                     break;
                 case "clean":
-                    PotatoSelectedInfo.Text = "Leicht (+1,0 · Clean): Glatte Potato-Texturen, 100% normale Berge & Klippen ohne Boden-Glitch.";
+                    PotatoSelectedInfo.Text = "Leicht (+1,0): glattere Texturen, Hügel und Kanten bleiben normal.";
                     break;
                 case "medium":
-                    PotatoSelectedInfo.Text = "Mittel (+1,5 · EM Tweaks): Klassischer EM-Potato-Look ohne Berg-/Boden-Bug (setzt automatisch Texturen Hoch + Sichtweite Weit).";
+                    PotatoSelectedInfo.Text = "Mittel (+1,5): typischer Potato-Look, Berge bleiben rund.";
                     break;
                 case "strong":
-                    PotatoSelectedInfo.Text = "Stark (+3,0 · Potato): Stark vereinfachte Play-Doh-Texturen (0x18 + MipBias 4) für maximale FPS.";
+                    PotatoSelectedInfo.Text = "Stark (+3,0): kaum noch Texturen, Berge bleiben rund.";
                     break;
                 case "ultra":
-                    PotatoSelectedInfo.Text = "Extrem (0x00000078 · Ultra Potato): Kompletter 1x1 Clay-/Plastik-Look auf Skins, Waffen & Builds wie im EM-Tweaks-Video (@Austvns)!";
+                    PotatoSelectedInfo.Text = "Extrem (+15): keine Texturen mehr, alles sieht aus wie Knete.";
                     break;
             }
         }
@@ -463,9 +463,9 @@ namespace RetracBoostSetup
             try
             {
                 SetProgress(10, "Prüfe laufende Prozesse …");
-                AddLog("•", "Beende laufende Retrac Boost Instanzen (falls geöffnet) …");
+                AddLog("•", "Schließe laufendes Retrac Boost …");
                 await Task.Run(() => InstallerEngine.StopRunningInstances());
-                AddLog("✓", "Prozessprüfung abgeschlossen.");
+                AddLog("✓", "Kein Retrac Boost mehr offen.");
 
                 SetProgress(30, "Entpacke Programmdateien …");
                 string exePath = Path.Combine(installDir, "RetracBoost.exe");
@@ -527,7 +527,7 @@ namespace RetracBoostSetup
                     autoBoost ? "1" : "0",
                     autoStart ? "1" : "0");
 
-                AddLog("•", "Konfiguriere ausgewählte System-, Treiber- und Spiel-Tweaks …");
+                AddLog("•", "Richte die ausgewählten Punkte ein …");
                 await Task.Run(() =>
                 {
                     var psi = new ProcessStartInfo(exePath, "--setup-preset \"" + presetArg + "\"")
@@ -542,14 +542,14 @@ namespace RetracBoostSetup
                     }
                 });
 
-                if (pingBoost) AddLog("✓", "Ping- & Netzwerk-Booster aktiviert (Nagle aus, AFD Fast-Datagram, QoS DSCP 46, Adapter-Tuning).");
-                if (fpsBoost) AddLog("✓", "Unsichtbarer FPS-Booster aktiviert (NVIDIA Max Performance, Low Latency, Kernel-Priorität, HAGS, RAM-Clean).");
-                if (retracPack) AddLog("✓", "Retrac / Fortnite Latenz-Paket aktiviert (FSO aus, Spielmodus an, 1:1 Maus, Engine-Latenz).");
-                if (serverLock) AddLog("✓", "Server-Lock aktiviert (alle EU-Standorte außer Frankfurt gesperrt, IPv4 + IPv6 – nur noch eu-central-1).");
+                if (pingBoost) AddLog("✓", "Ping-Booster an.");
+                if (fpsBoost) AddLog("✓", "FPS-Booster und Energiesparplan an.");
+                if (retracPack) AddLog("✓", "Priorität und Eingabe für Retrac eingestellt.");
+                if (serverLock) AddLog("✓", "Server-Lock an: nur noch Frankfurt.");
                 if (potatoMode != "off")
-                    AddLog("✓", "Potato-Grafik (Stufe: " + potatoMode.ToUpperInvariant() + ") inkl. Anti-Berg-Bug-Fix aktiviert.");
+                    AddLog("✓", "Potato-Grafik (Stufe: " + potatoMode + ") an.");
                 else
-                    AddLog("✓", "Original-Grafik beibehalten (Potato-Grafik deaktiviert).");
+                    AddLog("✓", "Grafik bleibt unverändert.");
 
                 SetProgress(100, "Installation erfolgreich abgeschlossen!");
                 FinishCard.Visibility = Visibility.Visible;
@@ -577,7 +577,7 @@ namespace RetracBoostSetup
         void EnterUninstallMode()
         {
             BadgeText.Text = "UNINSTALLER";
-            HeaderSub.Text = "Saubere Deinstallation & Wiederherstellung aller Windows-/Grafik-Standards";
+            HeaderSub.Text = "Entfernt Retrac Boost und setzt auf Wunsch alle Änderungen zurück";
             StepBar.Visibility = Visibility.Collapsed;
             PageStep1.Visibility = Visibility.Collapsed;
             PageStep2.Visibility = Visibility.Collapsed;
@@ -608,13 +608,13 @@ namespace RetracBoostSetup
             {
                 SetProgress(15, "Beende laufende Prozesse …");
                 await Task.Run(() => InstallerEngine.StopRunningInstances());
-                AddLog("✓", "Laufende Retrac Boost Prozesse beendet.");
+                AddLog("✓", "Retrac Boost geschlossen.");
 
                 string exePath = Path.Combine(installDir, "RetracBoost.exe");
                 if (revertAll && File.Exists(exePath))
                 {
                     SetProgress(45, "Setze alle Tweaks auf Windows-Standard zurück …");
-                    AddLog("•", "Stelle Originalwerte in Registry, NVIDIA-Profil und Fortnite-INIs wieder her …");
+                    AddLog("•", "Setze Änderungen zurück …");
                     await Task.Run(() =>
                     {
                         var psi = new ProcessStartInfo(exePath, "--revert-all")
@@ -628,7 +628,7 @@ namespace RetracBoostSetup
                             if (p != null) p.WaitForExit(60000);
                         }
                     });
-                    AddLog("✓", "Alle Tweaks wurden auf den ursprünglichen Zustand zurückgesetzt.");
+                    AddLog("✓", "Alle Änderungen zurückgesetzt.");
                 }
 
                 SetProgress(75, "Entferne Verknüpfungen & Registry-Einträge …");
@@ -671,7 +671,7 @@ namespace RetracBoostSetup
                 }
 
                 SetProgress(100, "Retrac Boost wurde vollständig entfernt.");
-                AddLog("✓", "Deinstallation erfolgreich abgeschlossen.");
+                AddLog("✓", "Deinstalliert.");
                 installFinished = true;
                 NextBtn.Content = "Schließen";
                 NextBtn.IsEnabled = true;

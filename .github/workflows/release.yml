@@ -10,6 +10,10 @@ on:
       tag:
         description: 'Release-Tag (z. B. v1.0.2)'
         required: true
+      replace:
+        description: 'Vorhandenen Release mit diesem Tag vorher löschen (inkl. Tag)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -55,6 +59,23 @@ jobs:
             "{0}: {1:N0} Bytes, Version {2}" -f $f, (Get-Item $f).Length, $v
           }
 
+      - name: Alten Release löschen
+        if: ${{ github.event.inputs.replace == 'true' }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view $env:TAG --repo $env:GITHUB_REPOSITORY 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release delete $env:TAG --repo $env:GITHUB_REPOSITORY --cleanup-tag --yes
+            if ($LASTEXITCODE -ne 0) { throw "Release $env:TAG konnte nicht gelöscht werden" }
+            "Release $env:TAG gelöscht"
+          } else {
+            git push origin ":refs/tags/$env:TAG" 2>$null
+            "Kein Release $env:TAG vorhanden"
+          }
+          $global:LASTEXITCODE = 0
+
       - name: Release veröffentlichen
         uses: softprops/action-gh-release@v2
         with:
@@ -65,27 +86,4 @@ jobs:
           files: |
             RetracBoost.exe
             RetracBoost-Setup.exe
-          body: |
-            ## Neu in ${{ env.TAG }}
-
-            **Server-Lock (nur Frankfurt)**
-            - Sperrt alle AWS-Standorte in Europa außer Frankfurt – inkl. Zürich, IPv6 und aller AWS-Dienste (1108 statt 302 Bereiche)
-            - Match-Server-Wächter: zeigt, ob dein Match-Server in Frankfurt steht, und sperrt fremde Server nach dem Match
-            - Regel gilt nur für die Spiel-Exe und wird bei Änderungen automatisch neu geschrieben
-
-            **Ping-Booster**
-            - UDP Receive Offload (Windows 11) aus
-            - Mehr Netzwerkkarten-Optionen: Interrupt-Verzögerungen, Energiesparen, WLAN-Roaming aus, RSS an
-
-            **FPS-Booster**
-            - Spiel immer auf der Hochleistungs-GPU, Flip-Modell im randlosen Fenster
-            - Multithreaded Rendering, DirectX 11, VSync aus
-            - RAM-Wächter während des Spiels
-            - Desktop: Energiesparplan „Ultimative Leistung"
-
-            **Potato-Grafik**
-            - GameUserSettings.ini wird gesperrt, damit das Spiel die Werte nicht zurücksetzt
-            - Nebel aus bei Stark/Extrem
-            - Fehler beim Zurücksetzen behoben (leerer Abschnitt in der Engine.ini, gelöschte eigene Werte)
-
-            ⚠️ Auf Windows noch nicht vollständig getestet. Bei Problemen: im Programm alles zurücksetzen und `RetracBoost.exe --selftest --out ergebnis.txt` ausführen.
+          body_path: release-notes.md
