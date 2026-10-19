@@ -44,19 +44,23 @@ namespace RetracBoost
     {
         readonly string id, title, summary, key;
         readonly Action<bool> onChange;
+        readonly bool defaultOn;
 
-        public SettingTweak(string id, string title, string summary, Action<bool> onChange)
+        public SettingTweak(string id, string title, string summary, Action<bool> onChange, bool defaultOn = false)
         {
-            this.id = id; this.title = title; this.summary = summary; this.onChange = onChange;
+            this.id = id; this.title = title; this.summary = summary; this.onChange = onChange; this.defaultOn = defaultOn;
             key = "setting." + id;
         }
 
         public override string Id { get { return id; } }
         public override string Title { get { return title; } }
         public override string Summary { get { return summary; } }
+        /// <summary>Ersetzt die Beschreibung, z. B. für einen Hinweis wie „Tastenkürzel belegt“.</summary>
+        public string Note { get; set; }
+        public override string Detail { get { return Note ?? summary; } }
         public override bool WeApplied { get { return false; } }
         public override string BusyText { get { return ""; } }
-        public override bool IsApplied() { return Store.Get(key) == "1"; }
+        public override bool IsApplied() { var v = Store.Get(key); return v == null ? defaultOn : v == "1"; }
         public override void Apply() { Store.Set(key, "1"); if (onChange != null) onChange(true); }
         public override void Revert() { Store.Set(key, "0"); if (onChange != null) onChange(false); }
         public override string Snapshot() { return key + "=" + Store.Get(key); }
