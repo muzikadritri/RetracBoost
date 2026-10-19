@@ -43,6 +43,8 @@ mein-spiel.zip
 
   "optimizations": [
     { "type": "priority", "level": "high" },
+    { "type": "io_priority" },
+    { "type": "network_qos" },
     { "type": "gpu_high_performance" },
     { "type": "fullscreen_optimizations_off" },
     {
@@ -113,6 +115,12 @@ Andere `type`-Werte lehnt Retrac Boost ab. Mit `id` (a-z, 0-9, `-`, `_`) bekommt
 CPU-Priorität über `Image File Execution Options\<exe>\PerfOptions\CpuPriorityClass`. Windows setzt sie selbst beim Start des Spiels.
 `level`: `high` (Standard) oder `abovenormal`. Braucht Administratorrechte. Gilt für alle Einträge in `exes`.
 
+### `io_priority`
+Datenträger- und Speicherpriorität über `Image File Execution Options\<exe>\PerfOptions` (`IoPriority = 3`, `PagePriority = 5`). Das Spiel liest vor Hintergrundprogrammen von der Platte, seine Daten bleiben länger im RAM. Braucht Administratorrechte.
+
+### `network_qos`
+Windows-QoS-Regel, die alle Pakete der Exe mit DSCP 46 markiert. Wirkt, wenn der Router QoS oder WMM beachtet. Pro Exe eine Regel `RetracBoost-g-<id>-<n>`, beim Ausschalten wird sie wieder gelöscht. Braucht Administratorrechte.
+
 ### `gpu_high_performance`
 Windows-Grafikeinstellung „Hohe Leistung“ (`HKCU\Software\Microsoft\DirectX\UserGpuPreferences`) für jede gefundene Exe. Wirkt bei Geräten mit zwei Grafikkarten.
 
@@ -161,4 +169,4 @@ Compress-Archive -Path manifest.json, cover.jpg -DestinationPath ..\mein-spiel.z
 
 ## English summary
 
-A plugin is a ZIP with `manifest.json` and an optional PNG/JPG. It contains no code: it only lists which of Retrac Boost's built-in actions apply to a game (`priority`, `gpu_high_performance`, `fullscreen_optimizations_off`, `config`, `launch_options`). Paths must start with one of the placeholders above. Before installing, the app shows every change the plugin can make; nothing on the system changes until the user flips a switch, and every switch can be turned off again, restoring the saved values. Config edits only touch keys the game already wrote, never while the game runs.
+A plugin is a ZIP with `manifest.json` and an optional PNG/JPG. It contains no code: it only lists which of Retrac Boost's built-in actions apply to a game (`priority`, `io_priority`, `network_qos`, `gpu_high_performance`, `fullscreen_optimizations_off`, `config`, `launch_options`). Paths must start with one of the placeholders above. Before installing, the app shows every change the plugin can make; nothing on the system changes until the user flips a switch, and every switch can be turned off again, restoring the saved values. Config edits only touch keys the game already wrote, never while the game runs.
