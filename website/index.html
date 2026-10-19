@@ -1,0 +1,2375 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Retrac Boost</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Retrac Boost: Windows-Tool für Fortnite auf Retrac. Live-Ping, Server-Lock auf Frankfurt, Boost-Schalter, Werkzeuge und das Alt+L-Menü im Spiel.">
+<meta name="theme-color" content="#0A0D14">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%230A0D14%22/%3E%3Cpath d=%22M5 20h5l3-9 4 13 3-7h7%22 fill=%22none%22 stroke=%22%2300F5A0%22 stroke-width=%223%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&display=swap">
+<style>
+/* Layout: ein 12-Spalten-Raster, gleiche Außenränder. Jede Sektion zeigt ein echtes Stück der App (data-ui) neben dem Text. Eine grüne Fläche als Ruhepunkt. */
+:root {
+  --bg: #0A0D14;
+  --surface: #111520;
+  --raised: #161C2B;
+  --hover: #1E263A;
+  --line: #202738;
+  --line-strong: #2D3850;
+  --text: #F0F3F9;
+  --muted: #8B94A7;
+  --accent: #00F5A0;
+  --accent-ink: #032517;
+  --accent-soft: #0E2D22;
+  --warn: #FBBF24;
+  --bad: #F87171;
+
+  --font: "Archivo", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --display-wdth: 118;
+
+  --step-hero: clamp(4.6rem, 10.4vw, 11.5rem);
+  --step-h2: clamp(2.5rem, 5.4vw, 5.6rem);
+  --step-h3: clamp(1.35rem, 1.8vw, 1.75rem);
+  --step-body: clamp(1.0625rem, 1.15vw, 1.1875rem);
+  --step-small: 0.9375rem;
+
+  --gutter: clamp(20px, 3.2vw, 48px);
+  --section: clamp(112px, 13vw, 200px);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 80px; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--step-body);
+  line-height: 1.55;
+  font-variation-settings: "wdth" 100;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+img, canvas, svg { display: block; max-width: 100%; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+[hidden] { display: none !important; }
+
+html:not([lang="en"]) [data-l="en"],
+html[lang="en"] [data-l="de"] { display: none !important; }
+
+.wrap {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+}
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: clamp(16px, 2.2vw, 32px); }
+.grid > *, .boost-body > *, .head > * { min-width: 0; }
+section { padding-block: var(--section) 0; }
+
+h1, h2, h3 { margin: 0; font-weight: 800; letter-spacing: -0.03em; line-height: 0.95; text-wrap: balance; font-variation-settings: "wdth" var(--display-wdth); }
+h2 { font-size: var(--step-h2); }
+h3 { font-size: var(--step-h3); letter-spacing: -0.01em; line-height: 1.15; font-weight: 700; font-variation-settings: "wdth" 105; }
+p { margin: 0; max-width: 62ch; }
+.lead { font-size: clamp(1.25rem, 1.75vw, 1.625rem); line-height: 1.4; max-width: 34ch; letter-spacing: -0.005em; }
+.note { color: var(--muted); font-size: var(--step-small); }
+.stack > * + * { margin-top: 1.1em; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  min-height: 56px; padding: 0 26px;
+  border: 0; border-radius: 0; cursor: pointer;
+  font-weight: 700; font-size: 1.0625rem; text-decoration: none;
+  font-variation-settings: "wdth" 108;
+  transition: transform 160ms var(--ease-out), background-color 200ms ease, color 200ms ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
+.btn-ghost { background: var(--raised); color: var(--text); }
+.btn small { font-weight: 500; font-size: 0.875rem; opacity: 0.75; font-variation-settings: "wdth" 100; }
+.btn svg { width: 18px; height: 18px; flex: none; transition: transform 200ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover { background: #3dffb8; }
+  .btn-ghost:hover { background: var(--hover); }
+  .btn:hover svg.arrow-down { transform: translateY(3px); }
+  .btn:hover svg.arrow-out { transform: translate(2px, -2px); }
+}
+
+/* ---------- Navigation ---------- */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 60; background: var(--bg); }
+.nav {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50;
+  background: var(--bg);
+  transition: transform 300ms var(--ease-out);
+}
+.nav .wrap { display: flex; align-items: center; gap: 28px; min-height: 72px; }
+.wordmark { display: inline-flex; align-items: baseline; gap: 0.32em; text-decoration: none; font-size: 1.125rem; letter-spacing: 0.01em; font-variation-settings: "wdth" 115; }
+.wordmark b { font-weight: 800; color: #fff; }
+.wordmark span { font-weight: 400; color: var(--accent); }
+.nav-links { display: flex; gap: 26px; margin-left: auto; list-style: none; padding: 0; margin-block: 0; }
+.nav-links a { text-decoration: none; color: var(--muted); font-size: 0.9875rem; transition: color 160ms ease; }
+.nav-links a:hover, .nav-links a:focus-visible { color: var(--text); }
+.lang { display: inline-flex; background: var(--raised); padding: 3px; }
+.lang button { border: 0; background: transparent; padding: 6px 10px; cursor: pointer; font-size: 0.875rem; font-weight: 700; color: var(--muted); transition: color 160ms ease, background-color 160ms ease; }
+.lang button[aria-pressed="true"] { background: var(--line-strong); color: var(--text); }
+.nav .btn { min-height: 44px; padding: 0 18px; font-size: 0.9875rem; }
+@media (max-width: 980px) { .nav-links { display: none; } .lang { margin-left: auto; } }
+@media (max-width: 460px) { .nav .btn { display: none; } .nav .wrap { gap: 14px; } }
+
+/* ---------- Hero ---------- */
+.hero { padding-block: clamp(40px, 6vw, 88px) 0; }
+.hero .grid { align-items: end; row-gap: 56px; }
+.hero-text { grid-column: 1 / span 7; }
+.hero h1 { font-size: var(--step-hero); line-height: 0.84; letter-spacing: -0.045em; font-weight: 900; font-variation-settings: "wdth" 125; }
+.hero h1 .row { display: block; overflow: hidden; padding-bottom: 0.04em; }
+.hero h1 .row span { display: inline-block; }
+.hero h1 .row:last-child { color: var(--accent); }
+.hero .lead { margin-top: 40px; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 40px; }
+.hero-meta { margin-top: 22px; color: var(--muted); font-size: var(--step-small); }
+.hero-panel { grid-column: 8 / span 5; }
+@media (max-width: 1080px) {
+  .hero-text, .hero-panel { grid-column: 1 / -1; }
+  .hero h1 { font-size: clamp(4.2rem, 19vw, 11rem); }
+}
+
+/* ---------- App-Fragmente (eigene Optik der App) ---------- */
+[data-ui] { font-family: "Segoe UI Variable Text", "Segoe UI", var(--font); font-variation-settings: "wdth" 100; letter-spacing: 0; }
+.app {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  overflow: hidden;
+}
+.app-bar { display: flex; align-items: center; gap: 10px; padding: 14px 18px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.app-bar .mark b { font-weight: 700; color: #fff; }
+.app-bar .mark span { color: var(--accent); }
+.app-tabs { display: flex; gap: 4px; margin-left: auto; background: var(--raised); border-radius: 999px; padding: 3px; }
+.app-tabs span { padding: 4px 12px; border-radius: 999px; color: var(--muted); font-size: 12px; }
+.app-tabs span.on { background: var(--hover); color: var(--text); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; }
+.dot.live { animation: live 1.6s ease-in-out infinite; }
+@keyframes live { 50% { opacity: 0.35; } }
+
+.ping-body { padding: 22px 22px 18px; }
+.ping-head { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12.5px; gap: 12px; }
+.ping-head .target { display: inline-flex; align-items: center; gap: 8px; color: var(--text); }
+.ping-big { display: flex; align-items: baseline; gap: 8px; margin-top: 8px; }
+.ping-big .v { font-size: clamp(64px, 7vw, 96px); font-weight: 300; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.ping-big .u { font-size: 22px; color: var(--muted); }
+.ping-graph { height: 150px; margin-top: 10px; width: 100%; }
+.ping-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.ping-stats div { background: var(--raised); border-radius: 8px; padding: 10px 12px; }
+.ping-stats dt { color: var(--muted); font-size: 11.5px; }
+.ping-stats dd { margin: 2px 0 0; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.caption { margin-top: 14px; color: var(--muted); font-size: var(--step-small); }
+
+/* ---------- Server-Lock ---------- */
+.lock .grid { row-gap: 48px; align-items: start; }
+.lock-text { grid-column: 1 / span 4; position: sticky; top: 110px; }
+.lock-stage { grid-column: 5 / span 8; }
+.lock-text h2 { margin-bottom: 36px; }
+.map-frame { position: relative; background: var(--surface); border-radius: 12px; overflow: hidden; }
+.map-canvas { width: 100%; aspect-ratio: 4 / 3.1; }
+.map-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 20px; background: var(--raised); }
+.toggle { display: inline-flex; align-items: center; gap: 14px; background: transparent; border: 0; cursor: pointer; padding: 6px 0; font-weight: 700; font-size: 1.0625rem; }
+.switch { position: relative; width: 50px; height: 28px; border-radius: 999px; background: #1D2433; flex: none; transition: background-color 220ms ease; }
+.switch::after { content: ""; position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; background: #8E9CB2; transition: transform 260ms cubic-bezier(0.34, 1.4, 0.64, 1), background-color 220ms ease; }
+[aria-pressed="true"] > .switch, [aria-checked="true"] > .switch { background: var(--accent); }
+[aria-pressed="true"] > .switch::after, [aria-checked="true"] > .switch::after { transform: translateX(22px); background: #fff; }
+.toggle:active .switch::after { width: 24px; }
+.map-status { color: var(--muted); font-size: var(--step-small); }
+.map-status strong { color: var(--text); font-weight: 600; }
+.region-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 24px; margin: 36px 0 0; padding: 0; list-style: none; font-size: var(--step-small); }
+.region-list li { display: flex; justify-content: space-between; gap: 8px; padding: 9px 0; color: var(--muted); }
+.region-list li b { font-weight: 600; color: var(--text); }
+.region-list li .st { font-weight: 700; transition: color 200ms ease; }
+.region-list li .st.ok { color: var(--accent); }
+.region-list li .st.no { color: var(--bad); }
+@media (max-width: 1080px) {
+  .lock-text, .lock-stage { grid-column: 1 / -1; position: static; }
+  .region-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ---------- Spielserver ---------- */
+.server .grid { row-gap: 48px; align-items: center; }
+.server-ui { grid-column: 1 / span 6; }
+.server-text { grid-column: 8 / span 5; }
+.server-text h2 { margin-bottom: 36px; }
+.srv { padding: 22px; display: grid; gap: 16px; }
+.srv-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.srv-ip { font-size: clamp(24px, 2.6vw, 34px); font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.srv-where { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.srv-ms { text-align: right; font-size: 28px; font-weight: 300; font-variant-numeric: tabular-nums; }
+.srv-ms small { font-size: 14px; color: var(--muted); }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
+.hops { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 13px; }
+.hops li { display: grid; grid-template-columns: 28px minmax(0, 1fr) 70px; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 6px; background: var(--raised); opacity: 1; }
+.hops li .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+.hops li .h { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hops li .t { text-align: right; font-variant-numeric: tabular-nums; }
+.hops li .bar { grid-column: 2 / -1; height: 3px; border-radius: 2px; background: var(--line-strong); overflow: hidden; }
+.hops li .bar i { display: block; height: 100%; background: var(--accent); transform-origin: left; }
+.srv-split { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-size: 12.5px; }
+.srv-split div { background: var(--raised); border-radius: 8px; padding: 10px 12px; color: var(--muted); }
+.srv-split b { display: block; color: var(--text); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.retrac-regions { margin-top: 40px; }
+.retrac-regions h3 { margin-bottom: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.chips li { background: var(--raised); padding: 8px 14px; font-size: var(--step-small); }
+.chips li.off { color: var(--muted); background: transparent; padding-left: 0; }
+@media (max-width: 1080px) { .server-ui, .server-text { grid-column: 1 / -1; } .server-text { order: -1; } }
+
+/* ---------- Boost ---------- */
+.boost .head { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: clamp(16px, 2.2vw, 32px); row-gap: 28px; align-items: end; margin-bottom: 64px; }
+.boost .head h2 { grid-column: 1 / span 7; }
+.boost .head p { grid-column: 8 / span 5; }
+.boost-body { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: clamp(16px, 2.2vw, 32px); row-gap: 48px; }
+.tweaks { grid-column: 1 / span 7; list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.tweak { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 24px; align-items: center; padding: 22px 24px; background: var(--surface); transition: background-color 240ms ease; }
+.tweak.on { background: var(--accent-soft); }
+.tweak h3 { font-size: clamp(1.25rem, 1.6vw, 1.5rem); }
+.tweak p { grid-column: 1; color: var(--muted); font-size: var(--step-small); max-width: 56ch; transition: color 240ms ease; }
+.tweak.on p { color: #b9f5dc; }
+.tweak .toggle { grid-row: 1 / span 2; grid-column: 2; padding: 10px; margin: -10px; }
+.boost-side { grid-column: 9 / span 4; display: grid; gap: 40px; align-content: start; }
+.boost-all { display: grid; gap: 18px; padding: 28px; background: var(--raised); }
+.boost-all .count { font-size: clamp(3.2rem, 5vw, 4.6rem); font-weight: 800; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; font-variation-settings: "wdth" 120; }
+.boost-all .count span { color: var(--accent); }
+.fps h3 { margin-bottom: 12px; }
+.fps p + p { margin-top: 12px; }
+@media (max-width: 1080px) {
+  .boost .head h2, .boost .head p, .tweaks, .boost-side { grid-column: 1 / -1; }
+}
+
+/* ---------- Alt+L ---------- */
+.altl { }
+.altl .head { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: clamp(16px, 2.2vw, 32px); row-gap: 28px; margin-bottom: 56px; align-items: end; }
+.altl .head h2 { grid-column: 1 / span 6; }
+.altl .head .stack { grid-column: 7 / span 6; }
+kbd { font-family: inherit; font-weight: 700; display: inline-block; padding: 0.05em 0.45em; background: var(--raised); border-bottom: 2px solid var(--line-strong); font-size: 0.92em; }
+.screen { position: relative; background: #000; border-radius: 12px; overflow: hidden; aspect-ratio: 16 / 9; max-width: 100%; }
+.screen canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.screen .scene-game { transition: opacity 260ms ease; }
+.screen .scene-desk { opacity: 0; transition: opacity 260ms ease; }
+.screen.desk .scene-game { opacity: 0; }
+.screen.desk .scene-desk { opacity: 1; }
+.gm {
+  position: absolute; top: 5%; right: 3%; width: min(330px, 46%);
+  background: rgba(11, 13, 18, 0.95); border: 1px solid var(--line-strong); border-radius: 10px;
+  padding: 16px 16px 14px; font-size: 13px;
+  transform-origin: top right;
+  transition: transform 200ms var(--ease-out), opacity 200ms var(--ease-out);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+}
+.gm.closed { opacity: 0; transform: scale(0.96); pointer-events: none; }
+.screen.desk .gm { opacity: 0; transform: scale(0.96); pointer-events: none; }
+.gm-title { display: flex; justify-content: space-between; align-items: center; font-weight: 700; margin-bottom: 10px; }
+.gm-title span { color: var(--muted); font-weight: 400; font-size: 11.5px; }
+.gm label { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; margin-top: 8px; font-size: 12.5px; color: var(--text); }
+.gm label output { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+.gm input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); height: 22px; margin: 0; cursor: pointer; }
+.gm-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 12px; color: var(--muted); font-size: 11.5px; }
+.gm-foot button { background: #161C2B; border: 1px solid var(--line-strong); border-radius: 7px; padding: 5px 12px; cursor: pointer; font-size: 12px; transition: background-color 160ms ease, transform 160ms var(--ease-out); }
+.gm-foot button:hover { background: var(--hover); }
+.gm-foot button:active { transform: scale(0.97); }
+.screen-bar { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; margin-top: 18px; }
+.seg { display: inline-flex; background: var(--raised); padding: 4px; }
+.seg button { border: 0; background: transparent; cursor: pointer; padding: 10px 16px; font-weight: 700; font-size: 0.9875rem; color: var(--muted); transition: background-color 180ms ease, color 180ms ease; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.screen-state { color: var(--muted); font-size: var(--step-small); }
+.screen-state strong { color: var(--text); font-weight: 600; }
+.altl-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2.2vw, 32px); margin-top: 64px; }
+.altl-facts h3 { margin-bottom: 10px; }
+.altl-facts p { color: var(--text); font-size: var(--step-small); }
+@media (max-width: 1080px) { .altl .head h2, .altl .head .stack { grid-column: 1 / -1; } .altl-facts { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  .gm { position: relative; top: auto; right: auto; width: 100%; border-radius: 0 0 10px 10px; box-shadow: none; }
+  .screen { aspect-ratio: auto; overflow: visible; background: transparent; }
+  .screen .canvas-box { position: relative; aspect-ratio: 16 / 9; border-radius: 12px 12px 0 0; overflow: hidden; background: #000; }
+  .gm.closed, .screen.desk .gm { display: none; }
+}
+@media (min-width: 641px) { .screen .canvas-box { position: absolute; inset: 0; } }
+
+/* ---------- Potato ---------- */
+.potato .grid { row-gap: 48px; align-items: start; }
+.potato-text { grid-column: 1 / span 6; }
+.potato-text h2 { margin-bottom: 36px; }
+.potato-stage { grid-column: 7 / span 6; padding-left: clamp(0px, 2vw, 32px); }
+.compare { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px; touch-action: pan-y; cursor: ew-resize; user-select: none; background: var(--surface); }
+.compare canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.compare .after { clip-path: inset(0 0 0 50%); transition: filter 380ms var(--ease-out); }
+.compare .handle { position: absolute; top: 0; bottom: 0; left: 50%; width: 44px; margin-left: -22px; display: grid; place-items: center; outline: none; }
+.compare .handle::before { content: ""; position: absolute; top: 0; bottom: 0; left: 21px; width: 2px; background: #fff; }
+.compare .handle span { position: relative; width: 40px; height: 40px; border-radius: 50%; background: #fff; display: grid; place-items: center; color: #0A0D14; transition: transform 160ms var(--ease-out); }
+.compare .handle:focus-visible span { outline: 2px solid var(--accent); outline-offset: 3px; }
+.compare:active .handle span { transform: scale(0.94); }
+.compare .tag { position: absolute; bottom: 14px; padding: 5px 10px; background: rgba(10, 13, 20, 0.85); font-size: 0.8125rem; font-weight: 700; }
+.compare .tag.l { left: 14px; }
+.compare .tag.r { right: 14px; color: var(--accent); }
+.levels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 16px; }
+.levels button { border: 0; cursor: pointer; background: var(--surface); padding: 14px 8px; text-align: left; transition: background-color 180ms ease, transform 160ms var(--ease-out); display: grid; gap: 2px; }
+.levels button:active { transform: scale(0.97); }
+.levels button b { font-size: 1rem; font-variation-settings: "wdth" 108; }
+.levels button small { color: var(--muted); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.levels button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.levels button[aria-pressed="true"] small { color: var(--accent-ink); }
+@media (hover: hover) and (pointer: fine) { .levels button:not([aria-pressed="true"]):hover { background: var(--raised); } }
+.level-info { margin-top: 18px; min-height: 3.2em; }
+@media (max-width: 1080px) { .potato-text, .potato-stage { grid-column: 1 / -1; } }
+@media (max-width: 520px) { .levels { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* ---------- Werkzeuge ---------- */
+.tools h2 { margin-bottom: 64px; max-width: 14ch; }
+.tools .grid { row-gap: 48px; align-items: start; }
+.tool-list { grid-column: 1 / span 7; list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.tool-list li { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 8px 32px; padding: 26px 0; align-items: start; }
+.tool-list h3 { font-size: clamp(1.35rem, 2vw, 1.9rem); }
+.tool-list p { font-size: var(--step-small); }
+.bloat { grid-column: 9 / span 4; position: sticky; top: 110px; background: var(--surface); padding: 28px; }
+.bloat h3 { margin-bottom: 8px; }
+.grade { display: flex; align-items: baseline; gap: 18px; margin: 22px 0 6px; }
+.grade b { font-size: clamp(5rem, 8vw, 7.5rem); line-height: 0.9; font-weight: 900; letter-spacing: -0.04em; font-variation-settings: "wdth" 125; transition: color 200ms ease; }
+.grade span { color: var(--muted); font-size: var(--step-small); }
+.bloat input[type=range] { width: 100%; accent-color: var(--accent); margin: 14px 0 4px; height: 28px; cursor: pointer; }
+.scale { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; margin-top: 8px; font-size: 0.8125rem; }
+.scale div { background: var(--raised); padding: 8px 6px; transition: background-color 200ms ease, color 200ms ease; }
+.scale div b { display: block; font-size: 1rem; }
+.scale div span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.scale div.on { background: var(--text); color: var(--bg); }
+.scale div.on span { color: var(--bg); }
+@media (max-width: 1080px) { .tool-list, .bloat { grid-column: 1 / -1; position: static; } }
+@media (max-width: 900px) { .tool-list li { grid-template-columns: 1fr; } }
+
+/* ---------- Grüne Fläche ---------- */
+.field { margin-top: var(--section); padding-block: clamp(96px, 11vw, 168px); background: var(--accent); color: var(--accent-ink); }
+.field .grid { row-gap: 64px; }
+.field .col-a { grid-column: 1 / span 6; }
+.field .col-b { grid-column: 8 / span 5; }
+.field h2 { margin-bottom: 32px; }
+.field p { font-size: clamp(1.0625rem, 1.3vw, 1.25rem); }
+.field .path { margin-top: 36px; font-weight: 700; font-size: clamp(1.05rem, 1.7vw, 1.6rem); letter-spacing: -0.01em; word-break: break-all; font-variation-settings: "wdth" 90; }
+.field ul { margin: 28px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.field li { padding: 14px 18px; background: rgba(3, 37, 23, 0.08); font-weight: 600; }
+@media (max-width: 1080px) { .field .col-a, .field .col-b { grid-column: 1 / -1; } }
+
+/* ---------- Updates ---------- */
+.updates .grid { row-gap: 48px; align-items: start; }
+.updates-text { grid-column: 1 / span 5; }
+.updates-text h2 { margin-bottom: 36px; }
+.versions { grid-column: 7 / span 6; list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.versions li { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 4px 24px; padding: 24px; background: var(--surface); }
+.versions li:first-child { background: var(--raised); }
+.versions .v { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; font-variation-settings: "wdth" 115; }
+.versions li:first-child .v { color: var(--accent); }
+.versions h3 { font-size: 1.125rem; }
+.versions p { grid-column: 2; color: var(--muted); font-size: var(--step-small); }
+.update-ui { margin-top: 40px; max-width: 440px; }
+.update-ui .u-body { padding: 20px; display: grid; gap: 12px; font-size: 13px; }
+.update-ui .u-row { display: flex; justify-content: space-between; gap: 8px; }
+.update-ui .u-row span { color: var(--muted); }
+.progress { height: 6px; border-radius: 3px; background: #1D2433; overflow: hidden; }
+.progress i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0.0); }
+@media (max-width: 1080px) { .updates-text, .versions { grid-column: 1 / -1; } }
+@media (max-width: 520px) { .versions li { grid-template-columns: 1fr; } .versions p { grid-column: 1; } }
+
+/* ---------- Download ---------- */
+.dl h2 { font-size: clamp(2.4rem, 7.6vw, 8rem); max-width: 12ch; }
+.dl .grid { row-gap: 48px; margin-top: 64px; align-items: start; }
+.steps { grid-column: 1 / span 6; margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 6px; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 4px 16px; padding: 22px 24px; background: var(--surface); }
+.steps li::before { content: counter(s); grid-row: 1 / span 2; font-size: 2rem; font-weight: 800; line-height: 1; color: var(--accent); font-variation-settings: "wdth" 120; }
+.steps h3 { font-size: 1.2rem; }
+.steps p { font-size: var(--step-small); color: var(--muted); }
+.dl-side { grid-column: 8 / span 5; display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+.dl-buttons { display: grid; gap: 8px; }
+.dl-buttons .btn { justify-content: space-between; min-height: 72px; }
+.dl-buttons .btn > span { display: grid; text-align: left; line-height: 1.25; gap: 2px; }
+.dl-buttons .btn small { display: block; }
+.req { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 20px; margin: 0; font-size: var(--step-small); }
+.req dt { color: var(--muted); }
+.req dd { margin: 0; }
+pre { margin: 0; overflow-x: auto; background: var(--surface); padding: 20px; font-size: 0.875rem; line-height: 1.7; }
+code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+pre .c { color: var(--muted); }
+@media (max-width: 1080px) { .steps, .dl-side { grid-column: 1 / -1; } }
+
+/* ---------- FAQ ---------- */
+.faq .grid { row-gap: 40px; align-items: start; }
+.faq h2 { grid-column: 1 / span 4; }
+.faq-list { grid-column: 6 / span 7; display: grid; gap: 6px; }
+details { background: var(--surface); }
+summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 22px 24px; font-weight: 700; font-size: clamp(1.0625rem, 1.3vw, 1.25rem); font-variation-settings: "wdth" 105; }
+summary::-webkit-details-marker { display: none; }
+summary .pm { position: relative; width: 16px; height: 16px; flex: none; }
+summary .pm::before, summary .pm::after { content: ""; position: absolute; left: 0; top: 7px; width: 16px; height: 2px; background: var(--accent); transition: transform 220ms var(--ease-out); }
+summary .pm::after { transform: rotate(90deg); }
+details[open] summary .pm::after { transform: rotate(0deg); }
+details .a { padding: 0 24px 24px; color: var(--text); font-size: var(--step-small); }
+details .a p + p { margin-top: 10px; }
+@media (hover: hover) and (pointer: fine) { summary:hover { background: var(--raised); } }
+@media (max-width: 1080px) { .faq h2, .faq-list { grid-column: 1 / -1; } }
+
+/* ---------- Footer ---------- */
+footer { margin-top: var(--section); padding-block: 0 48px; overflow: hidden; }
+.foot-mark { font-size: clamp(3.2rem, 15.2vw, 15.5rem); font-weight: 900; line-height: 0.8; letter-spacing: -0.05em; font-variation-settings: "wdth" 125; white-space: nowrap; margin: 0; }
+.foot-mark > span { color: var(--accent); }
+.foot-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px 32px; margin-top: 40px; color: var(--muted); font-size: var(--step-small); }
+.foot-row nav { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.foot-row a { text-decoration: none; transition: color 160ms ease; }
+.foot-row a:hover { color: var(--text); }
+
+/* ---------- Bewegung ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .hero h1 .row span { animation: rise 900ms var(--ease-out) both; }
+  .hero h1 .row:nth-child(2) span { animation-delay: 90ms; }
+  .hero .lead { animation: fade-up 700ms var(--ease-out) 260ms both; }
+  .hero-actions { animation: fade-up 700ms var(--ease-out) 340ms both; }
+  .hero-meta { animation: fade-up 700ms var(--ease-out) 400ms both; }
+  .hero-panel { animation: panel-in 900ms var(--ease-out) 180ms both; }
+  @keyframes rise { from { transform: translateY(105%); } to { transform: translateY(0); } }
+  @keyframes fade-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+  @keyframes panel-in { from { opacity: 0; transform: translateY(36px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+  @supports (animation-timeline: scroll()) {
+    .hero-panel .app { animation: drift linear both; animation-timeline: scroll(root); animation-range: 0 900px; }
+    @keyframes drift { to { transform: translateY(-60px); } }
+  }
+  .io .rv { transition: opacity 650ms ease-out, transform 900ms var(--ease-out), clip-path 900ms var(--ease-in-out); }
+  .io .rv.pre { opacity: 0; transform: translateY(28px); }
+  .io .wipe.pre { opacity: 1; transform: none; clip-path: inset(0 100% 0 0); }
+  .io .foot-mark.pre { opacity: 0.15; transform: translateY(35%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .dot.live { animation: none; }
+  *, *::before, *::after { transition-duration: 1ms !important; }
+}
+
+/* =========================================================
+   Motion-Schicht: Shader-Wellen, Springs, Wort-Reveals, Details
+   ========================================================= */
+html { scrollbar-color: var(--line-strong) var(--bg); }
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 10px; border: 2px solid var(--bg); }
+p, li, dd, summary { text-wrap: pretty; }
+:focus-visible { transition: outline-offset 160ms var(--ease-out); }
+a:focus-visible, button:focus-visible { outline-offset: 4px; }
+
+/* Nav */
+.nav { will-change: transform; }
+.nav.hide { transform: translateY(calc(-100% - env(safe-area-inset-top, 0px))); }
+.nav-ping { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; background: var(--raised); border-radius: 999px; font-size: 0.8125rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.nav-ping b { color: var(--text); font-weight: 700; min-width: 2ch; text-align: right; }
+.nav-links { position: relative; }
+.nav-links li { position: relative; }
+.nav-links a { position: relative; display: inline-block; padding-block: 6px; }
+.nav-links a.active { color: var(--text); }
+.nav-links .nav-ind { position: absolute; left: 0; bottom: -2px; height: 2px; width: 1px; background: var(--accent); transform-origin: left; opacity: 0; transition: transform 380ms var(--ease-out), opacity 200ms ease; pointer-events: none; }
+.lang { position: relative; }
+.lang button { position: relative; z-index: 1; }
+.lang button[aria-pressed="true"] { background: transparent; }
+.lang-ind { position: absolute; top: 3px; left: 3px; bottom: 3px; width: calc(50% - 3px); background: var(--line-strong); transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1); }
+html[lang="en"] .lang-ind { transform: translateX(100%); }
+.progress-line { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; }
+.progress-line i { display: block; height: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); }
+@media (max-width: 760px) { .nav-ping { display: none; } }
+
+/* Hero */
+.hero { position: relative; isolation: isolate; overflow: hidden; padding-bottom: clamp(64px, 8vw, 120px); }
+.hero-waves { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 78%; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 1200ms ease; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 75%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 75%, transparent); }
+.hero-waves.on { opacity: 1; }
+.hero h1 .ch { display: inline-block; will-change: transform; }
+.hero h1 .row span { animation: none !important; }
+.hero h1 .row:last-child .ch { color: var(--accent); }
+.hero h1 { cursor: default; }
+
+/* Hero-Panel: 3D-Neigung mit Spring */
+.hero-panel { perspective: 1400px; }
+.tilt { position: relative; transform-style: preserve-3d; will-change: transform; }
+.tilt-shine { position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit; opacity: 0; transition: opacity 300ms ease; background: radial-gradient(500px circle at var(--sx, 50%) var(--sy, 0%), rgba(255, 255, 255, 0.07), transparent 45%); }
+.tilt:hover .tilt-shine { opacity: 1; }
+
+/* Spotlight auf Flächen */
+.spot { position: relative; isolation: isolate; }
+.spot::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 260ms ease; background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgba(0, 245, 160, 0.09), transparent 60%); }
+@media (hover: hover) and (pointer: fine) { .spot:hover::before { opacity: 1; } }
+
+/* Magnet-Buttons + Glanz */
+.mag { will-change: transform; }
+.mag > * { pointer-events: none; }
+.sheen { position: relative; overflow: hidden; }
+.sheen::after { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; background: rgba(255, 255, 255, 0.35); transform: translateX(-120%) skewX(-20deg); pointer-events: none; }
+@media (hover: hover) and (pointer: fine) { .sheen:hover::after { transform: translateX(520%) skewX(-20deg); transition: transform 700ms var(--ease-out); } }
+
+/* Ticker */
+.ticker { margin-top: 0; padding-block: 22px; background: var(--surface); overflow: hidden; }
+.ticker-track { display: flex; width: max-content; will-change: transform; }
+.ticker ul { display: flex; gap: 0; margin: 0; padding: 0; list-style: none; }
+.ticker li { display: inline-flex; align-items: center; gap: 28px; padding-right: 28px; font-weight: 800; font-size: clamp(1.25rem, 2.2vw, 2rem); letter-spacing: -0.02em; font-variation-settings: "wdth" 118; white-space: nowrap; color: var(--text); }
+.ticker li::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex: none; }
+.ticker li:nth-child(3n+2) { color: var(--muted); }
+
+/* Wort-Reveal für Überschriften */
+.sw { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.1em; margin-bottom: -0.1em; }
+.sw > i { display: inline-block; font-style: normal; transition: transform 900ms var(--ease-out); transition-delay: calc(var(--i, 0) * 55ms); }
+.io .split.pre .sw > i { transform: translateY(108%) rotate(4deg); }
+.io .split.pre { opacity: 1 !important; transform: none !important; }
+
+/* Tool-Liste: Hover */
+.tool-list li { position: relative; transition: transform 300ms var(--ease-out); }
+.tool-list h3 { transition: color 200ms ease, transform 300ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .tool-list li:hover h3 { color: var(--accent); transform: translateX(10px); }
+}
+
+/* Spielserver: Traceroute-Lauf */
+.hops li { transition: background-color 260ms ease; }
+.hops li.hit { background: var(--accent-soft); }
+.hops li.hit .t { color: var(--accent); }
+
+/* Regionen-Liste <-> Karte */
+.region-list li { cursor: default; transition: color 200ms ease, transform 260ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) { .region-list li:hover { transform: translateX(4px); } .region-list li:hover b { color: var(--accent); } }
+
+/* Boost */
+.count span { display: inline-block; }
+.tweak h3 { transition: transform 300ms var(--ease-out); }
+.tweak.on h3 { transform: translateX(4px); }
+.tweak .pulse { position: absolute; right: 30px; top: 50%; width: 50px; height: 50px; margin-top: -25px; border-radius: 50%; background: var(--accent); opacity: 0; pointer-events: none; }
+
+/* Bufferbloat-Chart */
+.bloat-chart { width: 100%; height: 96px; margin-top: 14px; }
+.bloat-legend { display: flex; gap: 18px; margin-top: 8px; font-size: 0.8125rem; color: var(--muted); }
+.bloat-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.bloat-legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.lg-idle { background: var(--muted); }
+.lg-load { background: var(--accent); }
+
+/* Update-Haken */
+.u-status { display: inline-flex; align-items: center; gap: 6px; }
+.u-check { width: 14px; height: 14px; fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 16; stroke-dashoffset: 16; transition: stroke-dashoffset 420ms var(--ease-out); display: none; }
+.u-status.done .u-check { display: block; stroke-dashoffset: 0; }
+
+/* Code kopieren */
+.code-box { position: relative; }
+.copy { position: absolute; top: 10px; right: 10px; z-index: 1; border: 0; background: var(--raised); padding: 7px 12px; font-size: 0.8125rem; font-weight: 700; cursor: pointer; display: grid; transition: background-color 160ms ease, transform 140ms var(--ease-out); }
+.copy:active { transform: scale(0.95); }
+.copy > span { grid-area: 1 / 1; transition: transform 240ms var(--ease-out), opacity 200ms ease; }
+.copy .copy-b { opacity: 0; transform: translateY(70%); color: var(--accent); }
+.copy.done .copy-a { opacity: 0; transform: translateY(-70%); }
+.copy.done .copy-b { opacity: 1; transform: none; }
+@media (hover: hover) and (pointer: fine) { .copy:hover { background: var(--hover); } }
+
+/* Toast */
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 70; display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--raised); color: var(--text); font-size: 0.9375rem; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55); transform: translate(-50%, calc(100% + 40px)); opacity: 0; transition: transform 420ms cubic-bezier(0.32, 0.72, 0, 1), opacity 260ms ease; pointer-events: none; max-width: calc(100% - 32px); }
+.toast.show { transform: translate(-50%, 0); opacity: 1; }
+.toast > span { margin-left: 6px; }
+kbd { transition: transform 120ms var(--ease-out), border-bottom-width 120ms var(--ease-out), background-color 120ms ease; }
+kbd.down { transform: translateY(2px); border-bottom-width: 0; background: var(--accent); color: var(--accent-ink); }
+
+/* Nach oben */
+.to-top { position: fixed; right: max(20px, env(safe-area-inset-right, 0px)); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 60; width: 48px; height: 48px; display: grid; place-items: center; background: var(--raised); color: var(--accent); box-shadow: 0 10px 30px rgba(0,0,0,0.45); transform: translateY(16px) scale(0.92); opacity: 0; pointer-events: none; transition: transform 260ms var(--ease-out), opacity 200ms ease; }
+.to-top.show { transform: none; opacity: 1; pointer-events: auto; }
+.to-top svg { width: 20px; height: 20px; transition: transform 200ms var(--ease-out); }
+.to-top:active { transform: scale(0.94); }
+@media (hover: hover) and (pointer: fine) { .to-top:hover svg { transform: translateY(-3px); } }
+
+/* Footer-Wortmarke: Buchstaben heben sich */
+.foot-mark .fl { display: inline-block; will-change: transform; }
+.foot-mark { cursor: default; }
+
+/* Grüne Fläche öffnet sich */
+.field { will-change: clip-path; }
+
+/* FAQ */
+details .a { overflow: hidden; }
+summary { transition: background-color 180ms ease; }
+summary > span { transition: transform 260ms var(--ease-out); }
+details[open] summary > span { transform: translateX(6px); }
+
+/* Alt+L Feinschliff */
+.screen .scene-game, .screen .scene-desk { transition: opacity 320ms ease, filter 320ms ease; }
+.screen.desk .scene-game { filter: blur(6px); }
+.screen:not(.desk) .scene-desk { filter: blur(6px); }
+.gm { transition: transform 220ms var(--ease-out), opacity 200ms var(--ease-out), filter 220ms var(--ease-out); }
+.gm.closed, .screen.desk .gm { filter: blur(4px); }
+.gm input[type=range] { transition: filter 160ms ease; }
+.gm input[type=range]:active { filter: brightness(1.15); }
+.gm output { display: inline-block; transition: transform 160ms var(--ease-out); }
+.gm output.bump { transform: scale(1.12); }
+
+/* Potato */
+.compare .tag.r { transition: transform 260ms var(--ease-out), opacity 200ms ease; }
+.compare .tag.r.swap { transform: translateY(6px); opacity: 0; }
+.lod-big { position: absolute; top: 14px; right: 14px; padding: 6px 10px; background: rgba(10, 13, 20, 0.85); font-weight: 800; font-size: 1.25rem; font-variant-numeric: tabular-nums; color: var(--accent); font-variation-settings: "wdth" 115; pointer-events: none; }
+
+/* Links im Fließtext */
+.foot-row a, .note a { background: linear-gradient(currentColor, currentColor) left bottom / 0 1px no-repeat; transition: background-size 260ms var(--ease-out), color 160ms ease; }
+.foot-row a:hover { background-size: 100% 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { transform: none !important; flex-wrap: wrap; width: auto; }
+  .ticker ul + ul { display: none; }
+  .ticker ul { flex-wrap: wrap; row-gap: 8px; }
+  .nav.hide { transform: none; }
+  .io .split.pre .sw > i { transform: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="nav" id="top">
+  <div class="wrap">
+    <a class="wordmark" href="#top" aria-label="Retrac Boost"><b>RETRAC</b><span>BOOST</span></a>
+    <span class="nav-ping" aria-hidden="true"><i class="dot live"></i><b id="navPing">27</b> ms</span>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#server-lock">Server-Lock</a></li>
+      <li><a href="#boost">Boost</a></li>
+      <li><a href="#alt-l"><span data-l="de">Alt+L-Menü</span><span data-l="en">Alt+L menu</span></a></li>
+      <li><a href="#werkzeuge"><span data-l="de">Werkzeuge</span><span data-l="en">Tools</span></a></li>
+      <li><a href="#fragen"><span data-l="de">Fragen</span><span data-l="en">Questions</span></a></li>
+      <li class="nav-ind" aria-hidden="true"></li>
+    </ul>
+    <div class="lang" role="group" aria-label="Sprache / Language">
+      <i class="lang-ind" aria-hidden="true"></i>
+      <button type="button" data-set-lang="de" aria-pressed="true">DE</button>
+      <button type="button" data-set-lang="en" aria-pressed="false">EN</button>
+    </div>
+    <a class="btn btn-primary mag" href="#download"><span data-l="de">Download</span><span data-l="en">Download</span></a>
+  </div>
+  <div class="progress-line" aria-hidden="true"><i id="scrollBar"></i></div>
+</header>
+
+<main>
+<!-- ===================== HERO ===================== -->
+<section class="hero" aria-labelledby="hero-title">
+  <canvas class="hero-waves" id="heroWaves" aria-hidden="true"></canvas>
+  <div class="wrap grid">
+    <div class="hero-text">
+      <h1 id="hero-title"><span class="row"><span>Retrac</span></span><span class="row"><span>Boost</span></span></h1>
+      <p class="lead">
+        <span data-l="de">Ein Windows-Tool für Fortnite auf Retrac. Es zeigt deinen Ping live, stellt Windows und die Netzwerkkarte aufs Spielen ein und lässt dich nur noch auf Server in Frankfurt.</span>
+        <span data-l="en">A Windows tool for Fortnite on Retrac. It shows your ping live, sets up Windows and your network card for gaming and keeps you on Frankfurt servers.</span>
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary mag sheen" data-dl="setup" href="https://github.com/muzikadritri/RetracBoost/releases/latest/download/RetracBoost-Setup.exe">
+          <svg class="arrow-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 4v13M6 11l6 6 6-6M5 21h14"/></svg>
+          <span data-l="de">Herunterladen</span><span data-l="en">Download</span>
+          <small class="js-version">v1.0.5</small>
+        </a>
+        <a class="btn btn-ghost mag" href="https://github.com/muzikadritri/RetracBoost" target="_blank" rel="noopener">
+          <span data-l="de">Quellcode auf GitHub</span><span data-l="en">Source on GitHub</span>
+          <svg class="arrow-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
+        </a>
+      </div>
+      <p class="hero-meta">
+        <span data-l="de">Windows 10 und 11 · kostenlos · Adminrechte nötig, weil Netzwerk und Firewall nur so geändert werden dürfen</span>
+        <span data-l="en">Windows 10 and 11 · free · needs admin rights, because network and firewall settings require them</span>
+      </p>
+    </div>
+
+    <div class="hero-panel" id="heroPanel">
+      <div class="app tilt" data-ui id="tiltCard">
+        <i class="tilt-shine" aria-hidden="true"></i>
+        <div class="app-bar">
+          <span class="mark"><b>RETRAC</b> <span>BOOST</span></span>
+          <div class="app-tabs" aria-hidden="true"><span class="on">Boost</span><span data-l="de">Werkzeuge</span><span data-l="en">Tools</span><span>Retrac</span></div>
+        </div>
+        <div class="ping-body">
+          <div class="ping-head">
+            <span class="target"><i class="dot live"></i> <span data-l="de">Live-Ziel: Frankfurt (AWS)</span><span data-l="en">Live target: Frankfurt (AWS)</span></span>
+            <span>TCP:443</span>
+          </div>
+          <div class="ping-big" aria-live="off"><span class="v" id="pingValue">27</span><span class="u">ms</span></div>
+          <canvas class="ping-graph" id="pingGraph" aria-label="Ping-Verlauf" role="img"></canvas>
+          <dl class="ping-stats">
+            <div><dt><span data-l="de">Schnitt</span><span data-l="en">Average</span></dt><dd id="stAvg">27</dd></div>
+            <div><dt>Jitter</dt><dd id="stJit">1.4</dd></div>
+            <div><dt><span data-l="de">Verlust</span><span data-l="en">Loss</span></dt><dd id="stLoss">0 %</dd></div>
+            <div><dt>Max</dt><dd id="stMax">31</dd></div>
+          </dl>
+        </div>
+      </div>
+      <p class="caption">
+        <span data-l="de">So sieht der Boost-Tab aus. Die Werte hier sind Beispiele, in der App kommen sie aus deiner Leitung.</span>
+        <span data-l="en">This is the Boost tab. The numbers here are examples, in the app they come from your own connection.</span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track" id="tickerTrack"><ul><li><span data-l="de">UDP-Fastpath</span><span data-l="en">UDP fast path</span></li><li><span data-l="de">DSCP 46</span><span data-l="en">DSCP 46</span></li><li><span data-l="de">eu-central-1</span><span data-l="en">eu-central-1</span></li><li><span data-l="de">Alt+L</span><span data-l="en">Alt+L</span></li><li><span data-l="de">LOD-Bias +1,5</span><span data-l="en">LOD bias +1.5</span></li><li><span data-l="de">Bufferbloat A+</span><span data-l="en">Bufferbloat A+</span></li><li><span data-l="de">IPv4 + IPv6</span><span data-l="en">IPv4 + IPv6</span></li><li><span data-l="de">RSS an</span><span data-l="en">RSS on</span></li><li><span data-l="de">Ultimative Leistung</span><span data-l="en">Ultimate Performance</span></li><li><span data-l="de">RAM-Wächter</span><span data-l="en">RAM watcher</span></li><li><span data-l="de">Winsock-Reset</span><span data-l="en">Winsock reset</span></li><li><span data-l="de">Pfad-MTU</span><span data-l="en">Path MTU</span></li><li><span data-l="de">Timer 0,5 ms</span><span data-l="en">0.5 ms timer</span></li><li><span data-l="de">state.ini</span><span data-l="en">state.ini</span></li></ul><ul><li><span data-l="de">UDP-Fastpath</span><span data-l="en">UDP fast path</span></li><li><span data-l="de">DSCP 46</span><span data-l="en">DSCP 46</span></li><li><span data-l="de">eu-central-1</span><span data-l="en">eu-central-1</span></li><li><span data-l="de">Alt+L</span><span data-l="en">Alt+L</span></li><li><span data-l="de">LOD-Bias +1,5</span><span data-l="en">LOD bias +1.5</span></li><li><span data-l="de">Bufferbloat A+</span><span data-l="en">Bufferbloat A+</span></li><li><span data-l="de">IPv4 + IPv6</span><span data-l="en">IPv4 + IPv6</span></li><li><span data-l="de">RSS an</span><span data-l="en">RSS on</span></li><li><span data-l="de">Ultimative Leistung</span><span data-l="en">Ultimate Performance</span></li><li><span data-l="de">RAM-Wächter</span><span data-l="en">RAM watcher</span></li><li><span data-l="de">Winsock-Reset</span><span data-l="en">Winsock reset</span></li><li><span data-l="de">Pfad-MTU</span><span data-l="en">Path MTU</span></li><li><span data-l="de">Timer 0,5 ms</span><span data-l="en">0.5 ms timer</span></li><li><span data-l="de">state.ini</span><span data-l="en">state.ini</span></li></ul></div>
+</div>
+
+<!-- ===================== SERVER-LOCK ===================== -->
+<section class="lock" id="server-lock" aria-labelledby="lock-title">
+  <div class="wrap grid">
+    <div class="lock-text">
+      <h2 id="lock-title" class="reveal"><span data-l="de">Nur noch Frankfurt</span><span data-l="en">Frankfurt only</span></h2>
+      <div class="stack reveal-2">
+        <p>
+          <span data-l="de">Der Server-Lock sperrt über die Windows-Firewall ausgehendes UDP des Spiels zu allen anderen AWS-Standorten in Europa, über IPv4 und IPv6. Die Regel gilt nur für die Spiel-Exe. Browser, Discord und der Rest vom PC laufen normal weiter.</span>
+          <span data-l="en">The server lock uses Windows Firewall to block the game's outgoing UDP to every other AWS location in Europe, over IPv4 and IPv6. The rule only applies to the game's exe. Your browser, Discord and everything else keep working as usual.</span>
+        </p>
+        <p>
+          <span data-l="de">Landet ein Match trotzdem woanders, etwa auf einem OVH-Server, merkt sich der Match-Server-Wächter die Adresse und sperrt sie nach dem Match. Mitten im Spiel wird nie etwas gesperrt.</span>
+          <span data-l="en">If a match still ends up somewhere else, on an OVH server for example, the match server watcher remembers the address and blocks it after the match. Nothing is ever blocked mid-game.</span>
+        </p>
+        <p class="note">
+          <span data-l="de">AWS ändert seine Adressbereiche regelmäßig. Neue Versionen bringen die aktuelle Liste mit und schreiben die Firewall-Regeln beim Start neu.</span>
+          <span data-l="en">AWS changes its address ranges regularly. New versions ship the current list and rewrite the firewall rules on start.</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="lock-stage reveal">
+      <div class="map-frame">
+        <canvas class="map-canvas" id="mapCanvas" role="img" aria-label="Karte: AWS-Standorte in Europa, alle außer Frankfurt gesperrt"></canvas>
+        <div class="map-controls">
+          <button type="button" class="toggle" id="lockToggle" aria-pressed="true">
+            <span class="switch" aria-hidden="true"></span>
+            <span data-l="de">Server-Lock</span><span data-l="en">Server lock</span>
+          </button>
+          <p class="map-status" id="mapStatus" aria-live="polite"></p>
+        </div>
+      </div>
+      <ul class="region-list" id="regionList"></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SPIELSERVER ===================== -->
+<section class="server" id="spielserver" aria-labelledby="server-title">
+  <div class="wrap grid">
+    <div class="server-ui reveal">
+      <div class="app" data-ui>
+        <div class="app-bar">
+          <span class="mark"><b>RETRAC</b> <span>BOOST</span></span>
+          <div class="app-tabs" aria-hidden="true"><span>Boost</span><span data-l="de">Werkzeuge</span><span data-l="en">Tools</span><span class="on">Retrac</span></div>
+        </div>
+        <div class="srv">
+          <div class="srv-top">
+            <div>
+              <span class="pill"><i class="dot live"></i> <span data-l="de">Match erkannt</span><span data-l="en">Match detected</span></span>
+              <div class="srv-ip" style="margin-top:12px">3.120.●●.●●</div>
+              <div class="srv-where" data-scramble>Amazon AWS · Frankfurt (eu-central-1)</div>
+            </div>
+            <div class="srv-ms"><span id="srvMs">24</span> <small>ms</small></div>
+          </div>
+          <div class="srv-split">
+            <div><span data-l="de">Heimnetz</span><span data-l="en">Home network</span><b>1 ms</b></div>
+            <div>Provider<b>9 ms</b></div>
+            <div><span data-l="de">Ziel</span><span data-l="en">Target</span><b>24 ms</b></div>
+          </div>
+          <ol class="hops" id="hops" aria-label="Route"></ol>
+        </div>
+      </div>
+      <p class="caption">
+        <span data-l="de">Beispiel. Adresse und Zeiten hängen von deinem Anschluss ab.</span>
+        <span data-l="en">Example. Address and times depend on your connection.</span>
+      </p>
+    </div>
+
+    <div class="server-text">
+      <h2 id="server-title" class="reveal"><span data-l="de">Dein Spielserver</span><span data-l="en">Your game server</span></h2>
+      <div class="stack reveal-2">
+        <p>
+          <span data-l="de">Im Tab Retrac findet die App die Adresse des Match-Servers direkt aus dem laufenden Spiel. Sie schaut, auf welchen UDP-Ports das Spiel lauscht und wer Pakete schickt. Dazu zeigt sie Betreiber, Standort, Ping und die Route.</span>
+          <span data-l="en">In the Retrac tab the app finds the match server's address straight from the running game. It looks at which UDP ports the game listens on and who sends packets to it, then shows operator, location, ping and the route.</span>
+        </p>
+        <p>
+          <span data-l="de">Bei jedem neuen Match wird der Server neu erkannt. Du musst nichts anklicken.</span>
+          <span data-l="en">Every new match is detected again. You don't have to click anything.</span>
+        </p>
+      </div>
+      <div class="retrac-regions reveal-3">
+        <h3><span data-l="de">Retrac-Regionen in der App</span><span data-l="en">Retrac regions in the app</span></h3>
+        <ul class="chips">
+          <li><span data-l="de">Europa</span><span data-l="en">Europe</span></li>
+          <li><span data-l="de">NA Ost</span><span data-l="en">NA East</span></li>
+          <li><span data-l="de">NA West</span><span data-l="en">NA West</span></li>
+          <li><span data-l="de">Ozeanien</span><span data-l="en">Oceania</span></li>
+          <li><span data-l="de">Naher Osten</span><span data-l="en">Middle East</span></li>
+          <li><span data-l="de">Asien</span><span data-l="en">Asia</span></li>
+          <li>South Africa</li>
+          <li class="off"><span data-l="de">Brasilien hat keine Server</span><span data-l="en">Brazil has no servers</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== BOOST ===================== -->
+<section class="boost" id="boost" aria-labelledby="boost-title">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="boost-title" class="reveal"><span data-l="de">Fünf Schalter, ein Klick</span><span data-l="en">Five switches, one click</span></h2>
+      <p class="reveal-2">
+        <span data-l="de">Im Boost-Tab kannst du jeden Schalter einzeln setzen oder alle auf einmal. Unter dem Ping-Graphen steht danach Vorher und Jetzt, beides gemessen.</span>
+        <span data-l="en">In the Boost tab you can flip each switch on its own or all at once. Below the ping graph you then see Before and Now, both measured.</span>
+      </p>
+    </div>
+    <div class="boost-body">
+      <ul class="tweaks" id="tweaks">
+        <li class="tweak spot">
+          <h3><span data-l="de">Netzwerk-Stack</span><span data-l="en">Network stack</span></h3>
+          <p><span data-l="de">UDP-Fastpath an, keine verzögerten ACKs, keine Netzwerkdrosselung, Spiele-Scheduler auf Echtzeit. Unter Windows 11 kommt UDP Receive Offload weg.</span><span data-l="en">UDP fast path on, no delayed ACKs, no network throttling, game scheduler set to real time. On Windows 11 UDP receive offload is turned off.</span></p>
+          <button type="button" class="toggle" role="switch" aria-checked="false" aria-label="Netzwerk-Stack"><span class="switch"></span></button>
+        </li>
+        <li class="tweak spot">
+          <h3><span data-l="de">Netzwerkkarte</span><span data-l="en">Network card</span></h3>
+          <p><span data-l="de">Interrupt-Moderation, Paket-Bündelung, Energiesparen, Flusssteuerung und WLAN-Roaming aus, RSS an. Gesetzt wird nur, was dein Treiber selbst anbietet.</span><span data-l="en">Interrupt moderation, packet coalescing, power saving, flow control and Wi-Fi roaming off, RSS on. Only what your driver offers gets changed.</span></p>
+          <button type="button" class="toggle" role="switch" aria-checked="false" aria-label="Netzwerkkarte"><span class="switch"></span></button>
+        </li>
+        <li class="tweak spot">
+          <h3><span data-l="de">Energiesparplan</span><span data-l="en">Power plan</span></h3>
+          <p><span data-l="de">Am Desktop „Ultimative Leistung“, am Notebook „Höchstleistung“. Den angelegten Plan löscht die App beim Zurücksetzen wieder.</span><span data-l="en">"Ultimate Performance" on a desktop, "High performance" on a laptop. The app deletes the plan again when you reset.</span></p>
+          <button type="button" class="toggle" role="switch" aria-checked="false" aria-label="Energiesparplan"><span class="switch"></span></button>
+        </li>
+        <li class="tweak spot">
+          <h3><span data-l="de">Spiel</span><span data-l="en">Game</span></h3>
+          <p><span data-l="de">Pakete des Spiels bekommen Echtzeit-Priorität (DSCP 46), dazu hohe CPU-, I/O- und RAM-Priorität. Die setzt Windows beim Start, die App greift nicht ins Spiel.</span><span data-l="en">The game's packets get real-time priority (DSCP 46), plus high CPU, I/O and RAM priority. Windows applies it on launch, the app never touches the game.</span></p>
+          <button type="button" class="toggle" role="switch" aria-checked="false" aria-label="Spiel"><span class="switch"></span></button>
+        </li>
+        <li class="tweak spot">
+          <h3>DNS</h3>
+          <p><span data-l="de">Misst deinen aktuellen DNS gegen Cloudflare, Google, Quad9 und OpenDNS und nimmt den schnellsten. Ist deiner schon schnell, bleibt er.</span><span data-l="en">Measures your current DNS against Cloudflare, Google, Quad9 and OpenDNS and uses the fastest. If yours is already fast, it stays.</span></p>
+          <button type="button" class="toggle" role="switch" aria-checked="false" aria-label="DNS"><span class="switch"></span></button>
+        </li>
+      </ul>
+
+      <div class="boost-side">
+        <div class="boost-all reveal spot">
+          <div class="count num" aria-live="polite"><span id="onCount">0</span>/5</div>
+          <p class="note" id="boostState"><span data-l="de">Noch nichts geändert.</span><span data-l="en">Nothing changed yet.</span></p>
+          <button type="button" class="btn btn-primary" id="boostAll"><span data-l="de">Alles boosten</span><span data-l="en">Boost all</span></button>
+        </div>
+        <div class="fps reveal-2">
+          <h3>FPS-Booster</h3>
+          <p><span data-l="de">NVIDIA-Profil mit maximaler Leistung, Low Latency und VSync aus. Dazu Windows-Scheduler, HAGS und MPO-Fix, das Spiel immer auf der starken Grafikkarte, Flip-Modell auch im randlosen Fenster, Multithreaded Rendering, DX11 und Shader-Cache.</span><span data-l="en">NVIDIA profile with maximum performance, low latency and VSync off. Plus Windows scheduler, HAGS and MPO fix, the game always on the strong GPU, flip model in borderless windows too, multithreaded rendering, DX11 and shader cache.</span></p>
+          <p><span data-l="de">Der RAM-Wächter leert während des Spiels den Standby-Cache, sobald weniger als 1 GB frei ist.</span><span data-l="en">The RAM watcher clears the standby cache during the game whenever less than 1 GB is free.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ALT+L ===================== -->
+<section class="altl" id="alt-l" aria-labelledby="altl-title">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="altl-title" class="reveal"><span data-l="de">Alt+L im Spiel</span><span data-l="en">Alt+L in game</span></h2>
+      <div class="stack reveal-2">
+        <p>
+          <span data-l="de">Ein kleines Fenster über dem Spiel mit Gamma, Helligkeit, Kontrast und Farbton. Ins Spiel wird nichts geladen, die Werte laufen über die Farbkurve des Bildschirms.</span>
+          <span data-l="en">A small window on top of the game with gamma, brightness, contrast and color tone. Nothing is loaded into the game, the values go through the screen's color curve.</span>
+        </p>
+        <p>
+          <span data-l="de">Probier es hier aus: Drück <kbd>Alt</kbd> + <kbd>L</kbd> oder schieb die Regler. Mit „Desktop“ tabbst du raus.</span>
+          <span data-l="en">Try it here: press <kbd>Alt</kbd> + <kbd>L</kbd> or move the sliders. "Desktop" tabs you out.</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="reveal">
+      <div class="screen" id="screen">
+        <div class="canvas-box">
+          <canvas class="scene-game" id="sceneGame" role="img" aria-label="Spielszene"></canvas>
+          <canvas class="scene-desk" id="sceneDesk" role="img" aria-label="Windows-Desktop"></canvas>
+        </div>
+        <div class="gm" id="gm" data-ui>
+          <div class="gm-title"><span style="color:var(--text);font-weight:700;font-size:13px">Retrac Boost</span><span>Alt+L</span></div>
+          <label for="gGamma">Gamma <output id="oGamma">1.00</output><input type="range" id="gGamma" min="0.6" max="1.8" step="0.01" value="1"></label>
+          <label for="gBright"><span data-l="de">Helligkeit</span><span data-l="en">Brightness</span> <output id="oBright">0.00</output><input type="range" id="gBright" min="-0.3" max="0.3" step="0.01" value="0"></label>
+          <label for="gContrast"><span data-l="de">Kontrast</span><span data-l="en">Contrast</span> <output id="oContrast">1.00</output><input type="range" id="gContrast" min="0.7" max="1.4" step="0.01" value="1"></label>
+          <label for="gWarm"><span data-l="de">Farbton</span><span data-l="en">Color tone</span> <output id="oWarm">0.00</output><input type="range" id="gWarm" min="-1" max="1" step="0.05" value="0"></label>
+          <div class="gm-foot">
+            <span><span data-l="de">Alt+L oder Esc zum Schließen</span><span data-l="en">Alt+L or Esc to close</span></span>
+            <button type="button" id="gReset"><span data-l="de">Zurücksetzen</span><span data-l="en">Reset</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="screen-bar">
+        <div class="seg" role="group" aria-label="Fenster im Vordergrund">
+          <button type="button" id="fgGame" aria-pressed="true"><span data-l="de">Spiel vorne</span><span data-l="en">Game in front</span></button>
+          <button type="button" id="fgDesk" aria-pressed="false">Desktop</button>
+        </div>
+        <p class="screen-state" id="screenState" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div class="altl-facts">
+      <div class="reveal">
+        <h3><span data-l="de">Nur im Spiel</span><span data-l="en">Only in game</span></h3>
+        <p><span data-l="de">Seit v1.0.5 gelten die Werte nur, solange das Spiel im Vordergrund ist. Tabbst du raus, sieht dein PC sofort normal aus. Beim Zurücktabben kommen deine Werte wieder.</span><span data-l="en">Since v1.0.5 the values only apply while the game is in front. Tab out and your PC looks normal right away. Tab back in and your values return.</span></p>
+      </div>
+      <div class="reveal-2">
+        <h3><span data-l="de">Nur ein Bildschirm</span><span data-l="en">One screen only</span></h3>
+        <p><span data-l="de">Mit mehreren Monitoren wird nur der verändert, auf dem das Spiel läuft. Der zweite Bildschirm mit Discord bleibt, wie er ist.</span><span data-l="en">With several monitors only the one running the game changes. Your second screen with Discord stays as it is.</span></p>
+      </div>
+      <div class="reveal-3">
+        <h3><span data-l="de">Anderes Spiel</span><span data-l="en">Another game</span></h3>
+        <p><span data-l="de">Das Menü folgt Fortnite oder dem Spiel, das du im Boost-Tab ausgewählt hast. Ist Alt+L schon belegt, sagt dir die App das.</span><span data-l="en">The menu follows Fortnite or whichever game you picked in the Boost tab. If Alt+L is already taken, the app tells you.</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== POTATO ===================== -->
+<section class="potato" id="potato" aria-labelledby="potato-title">
+  <div class="wrap grid">
+    <div class="potato-text">
+      <h2 id="potato-title" class="reveal"><span data-l="de">Potato-Grafik</span><span data-l="en">Potato graphics</span></h2>
+      <div class="stack reveal-2">
+        <p>
+          <span data-l="de">Im Tab Retrac stellst du ein, wie matschig es aussehen darf. Die App setzt dafür über den NVIDIA-Treiber den LOD-Bias im Profil und schreibt passende Werte in Engine.ini und GameUserSettings.ini.</span>
+          <span data-l="en">In the Retrac tab you choose how mushy things may look. The app sets the LOD bias in the NVIDIA driver profile and writes matching values to Engine.ini and GameUserSettings.ini.</span>
+        </p>
+        <p>
+          <span data-l="de">Danach wird GameUserSettings.ini schreibgeschützt, damit das Spiel deine Werte nicht beim nächsten Start überschreibt. Die Änderung gilt ab dem nächsten Spielstart.</span>
+          <span data-l="en">GameUserSettings.ini is then set to read-only so the game can't overwrite your values on the next launch. The change applies from the next game start.</span>
+        </p>
+      </div>
+    </div>
+    <div class="potato-stage reveal">
+      <div class="compare" id="compare">
+        <canvas class="before" id="texBefore" aria-hidden="true"></canvas>
+        <canvas class="after" id="texAfter" aria-hidden="true"></canvas>
+        <span class="tag l"><span data-l="de">Normal</span><span data-l="en">Normal</span></span>
+        <span class="tag r" id="tagR">Mittel</span>
+        <span class="lod-big" id="lodBig" aria-hidden="true">+1,5</span>
+        <div class="handle" id="handle" role="slider" tabindex="0" aria-label="Vergleich verschieben" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+          <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="m9 6-6 6 6 6M15 6l6 6-6 6"/></svg></span>
+        </div>
+      </div>
+      <div class="levels" id="levels" role="group" aria-label="Stufe"></div>
+      <p class="level-info" id="levelInfo"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== WERKZEUGE ===================== -->
+<section class="tools" id="werkzeuge" aria-labelledby="tools-title">
+  <div class="wrap">
+    <h2 id="tools-title" class="reveal"><span data-l="de">Werkzeuge für deine Leitung</span><span data-l="en">Tools for your connection</span></h2>
+    <div class="grid">
+      <ul class="tool-list">
+        <li>
+          <h3><span data-l="de">Beste Region</span><span data-l="en">Best region</span></h3>
+          <p><span data-l="de">Misst alle AWS-Standorte gleichzeitig. Ein Klick auf eine Zeile setzt sie als Live-Ziel für den Ping-Graphen.</span><span data-l="en">Measures all AWS locations at once. Click a row to make it the live target for the ping graph.</span></p>
+        </li>
+        <li>
+          <h3><span data-l="de">Verbindungs-Diagnose</span><span data-l="en">Connection diagnosis</span></h3>
+          <p><span data-l="de">Traceroute mit Namen. Zeigt getrennt, wie viel Zeit im Heimnetz, beim Provider und am Ziel draufgeht, und wo der größte Sprung ist.</span><span data-l="en">Traceroute with names. Shows how much time goes to your home network, your provider and the target, and where the biggest jump is.</span></p>
+        </li>
+        <li>
+          <h3><span data-l="de">Ping unter Last</span><span data-l="en">Ping under load</span></h3>
+          <p><span data-l="de">Bufferbloat-Test über Cloudflare. Lädt etwa 25 Sekunden voll herunter und hoch und misst, wie stark dein Ping dabei steigt. Ergebnis als Note von A+ bis F.</span><span data-l="en">Bufferbloat test via Cloudflare. Fully loads download and upload for about 25 seconds and measures how much your ping rises. Result as a grade from A+ to F.</span></p>
+        </li>
+        <li>
+          <h3><span data-l="de">Paketgröße (MTU)</span><span data-l="en">Packet size (MTU)</span></h3>
+          <p><span data-l="de">Findet die größte Paketgröße, die ohne Zerteilen durchkommt, und kann die Netzwerkkarte darauf einstellen.</span><span data-l="en">Finds the largest packet size that gets through without fragmenting and can set your network card to it.</span></p>
+        </li>
+        <li>
+          <h3><span data-l="de">Netzwerk reparieren</span><span data-l="en">Repair network</span></h3>
+          <p><span data-l="de">Leert veraltete Zwischenspeicher oder setzt Winsock zurück, wenn gar nichts mehr geht.</span><span data-l="en">Clears stale caches or resets Winsock when nothing works anymore.</span></p>
+        </li>
+        <li>
+          <h3><span data-l="de">System und Komfort</span><span data-l="en">System and comfort</span></h3>
+          <p><span data-l="de">TCP-Feintuning, Hintergrund pausieren, Timer auf 0,5 ms, mit Windows starten, Ping-Overlay im Spiel und Auto-Boost.</span><span data-l="en">TCP fine tuning, pause background apps, 0.5 ms timer, start with Windows, in-game ping overlay and auto boost.</span></p>
+        </li>
+      </ul>
+
+      <div class="bloat reveal spot" data-ui>
+        <h3 style="font-family:var(--font)"><span data-l="de">So wird benotet</span><span data-l="en">How it's graded</span></h3>
+        <p class="note"><span data-l="de">Die Note hängt nur davon ab, wie viel Ping unter Last dazukommt. Schieb den Regler.</span><span data-l="en">The grade only depends on how much ping is added under load. Move the slider.</span></p>
+        <div class="grade"><b id="gradeLetter">A</b><span><span id="gradeMs">+18</span> ms</span></div>
+        <label for="bloatRange" class="note"><span data-l="de">Anstieg unter Last</span><span data-l="en">Increase under load</span></label>
+        <input type="range" id="bloatRange" min="0" max="500" step="1" value="18">
+        <canvas class="bloat-chart" id="bloatChart" aria-hidden="true"></canvas>
+        <div class="bloat-legend" aria-hidden="true"><span><i class="lg-idle"></i><span data-l="de">Leerlauf</span><span data-l="en">Idle</span></span><span><i class="lg-load"></i><span data-l="de">Unter Last</span><span data-l="en">Under load</span></span></div>
+        <div class="scale" id="gradeScale">
+          <div><b>A+</b><span>&lt;5</span></div>
+          <div><b>A</b><span>&lt;30</span></div>
+          <div><b>B</b><span>&lt;60</span></div>
+          <div><b>C</b><span>&lt;200</span></div>
+          <div><b>D</b><span>&lt;400</span></div>
+          <div><b>F</b><span>400+</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== GRÜNE FLÄCHE ===================== -->
+<div class="field" id="grundsatz">
+  <div class="wrap grid">
+    <div class="col-a">
+      <h2 class="wipe"><span data-l="de">Alles lässt sich zurücknehmen</span><span data-l="en">Everything can be undone</span></h2>
+      <p>
+        <span data-l="de">Zurücksetzen fasst nur an, was die App selbst geändert hat. Vorher sichert sie die Originalwerte. Was bei dir schon so eingestellt war, bleibt unangetastet, und jede Zeile lässt sich einzeln zurücknehmen.</span>
+        <span data-l="en">Reset only touches what the app changed itself. It saves the original values first. Anything that was already set that way on your PC stays untouched, and each row can be undone on its own.</span>
+      </p>
+      <p class="path" data-scramble>C:\ProgramData\RetracBoost\state.ini</p>
+    </div>
+    <div class="col-b">
+      <h2 class="wipe"><span data-l="de">Was es nicht kann</span><span data-l="en">What it can't do</span></h2>
+      <p>
+        <span data-l="de">Retrac Boost ändert nur, was auf deinem PC geht. Es leitet keinen Verkehr über andere Server um, so wie ExitLag mit seinem Relay-Netz. Ist der Weg zwischen deinem Provider und dem Spielserver schlecht, bleibt er schlecht.</span>
+        <span data-l="en">Retrac Boost only changes what can be changed on your PC. It doesn't route your traffic through other servers the way ExitLag does with its relay network. If the path between your provider and the game server is bad, it stays bad.</span>
+      </p>
+      <ul>
+        <li><span data-l="de">Kein Relay, kein VPN</span><span data-l="en">No relay, no VPN</span></li>
+        <li><span data-l="de">Kein Eingriff ins Spiel</span><span data-l="en">No hooks into the game</span></li>
+        <li><span data-l="de">Keine Garantie auf weniger Ping</span><span data-l="en">No promise of lower ping</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== UPDATES ===================== -->
+<section class="updates" id="updates" aria-labelledby="updates-title">
+  <div class="wrap grid">
+    <div class="updates-text">
+      <h2 id="updates-title" class="reveal"><span data-l="de">Updates mit einem Klick</span><span data-l="en">Updates in one click</span></h2>
+      <div class="stack reveal-2">
+        <p>
+          <span data-l="de">Oben in der App steht deine Version. Ein Klick darauf prüft GitHub, lädt die neue Version und installiert sie. Danach startet Retrac Boost neu.</span>
+          <span data-l="en">Your version sits at the top of the app. One click checks GitHub, downloads the new version and installs it. Retrac Boost then restarts.</span>
+        </p>
+        <p class="note">
+          <span data-l="de">Hast du noch v1.0.1 oder v1.0.2: Dort klappt der Knopf noch nicht. Einmal RetracBoost-Setup.exe installieren, danach geht er.</span>
+          <span data-l="en">Still on v1.0.1 or v1.0.2? The button doesn't work there yet. Install RetracBoost-Setup.exe once, then it does.</span>
+        </p>
+      </div>
+      <div class="app update-ui reveal-3" data-ui>
+        <div class="app-bar"><b style="font-size:14px">Updates</b><span style="color:var(--muted);margin-left:auto" class="js-version">v1.0.5</span></div>
+        <div class="u-body">
+          <div class="u-row"><strong id="uStatus" class="u-status"><svg class="u-check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5"/></svg><span data-l="de">Lade herunter …</span><span data-l="en">Downloading …</span></strong><span id="uPct">0%</span></div>
+          <div class="progress"><i id="uBar"></i></div>
+        </div>
+      </div>
+    </div>
+    <ol class="versions" reversed>
+      <li>
+        <span class="v">1.0.5</span>
+        <h3><span data-l="de">Bildwerte nur im Spiel</span><span data-l="en">Picture values only in game</span></h3>
+        <p><span data-l="de">Gamma und Co. gelten nur, solange das Spiel vorne ist, und nur auf dessen Bildschirm.</span><span data-l="en">Gamma and the rest only apply while the game is in front, and only on its screen.</span></p>
+      </li>
+      <li>
+        <span class="v">1.0.4</span>
+        <h3><span data-l="de">Ingame-Menü per Alt+L</span><span data-l="en">In-game menu on Alt+L</span></h3>
+        <p><span data-l="de">Gamma, Helligkeit, Kontrast und Farbton direkt im Spiel einstellen.</span><span data-l="en">Set gamma, brightness, contrast and color tone right in the game.</span></p>
+      </li>
+      <li>
+        <span class="v">1.0.3</span>
+        <h3><span data-l="de">Update-Knopf installiert wirklich</span><span data-l="en">Update button really installs</span></h3>
+        <p><span data-l="de">Der Knopf lädt die neue Version und ersetzt die alte.</span><span data-l="en">The button downloads the new version and replaces the old one.</span></p>
+      </li>
+      <li>
+        <span class="v">1.0.2</span>
+        <h3><span data-l="de">Erste Version auf GitHub</span><span data-l="en">First release on GitHub</span></h3>
+        <p><span data-l="de">Server-Lock, Ping-Booster, FPS-Booster und Potato-Grafik.</span><span data-l="en">Server lock, ping booster, FPS booster and potato graphics.</span></p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ===================== DOWNLOAD ===================== -->
+<section class="dl" id="download" aria-labelledby="dl-title">
+  <div class="wrap">
+    <h2 id="dl-title" class="reveal"><span data-l="de">Laden und loslegen</span><span data-l="en">Download, run, play</span></h2>
+    <div class="grid">
+      <ol class="steps">
+        <li>
+          <h3><span data-l="de">Setup herunterladen</span><span data-l="en">Download the setup</span></h3>
+          <p><span data-l="de">RetracBoost-Setup.exe von der neuesten GitHub-Release. Wer nichts installieren will, nimmt RetracBoost.exe, die läuft auch so.</span><span data-l="en">RetracBoost-Setup.exe from the latest GitHub release. If you don't want to install anything, take RetracBoost.exe, it runs on its own.</span></p>
+        </li>
+        <li>
+          <h3><span data-l="de">Starten und mit Ja bestätigen</span><span data-l="en">Run it and click Yes</span></h3>
+          <p><span data-l="de">Windows fragt nach Adminrechten. Ohne die lassen sich Netzwerk, Firewall und Energiesparplan nicht ändern.</span><span data-l="en">Windows asks for admin rights. Without them network, firewall and power plan can't be changed.</span></p>
+        </li>
+        <li>
+          <h3><span data-l="de">Boosten, dann Fortnite starten</span><span data-l="en">Boost, then start Fortnite</span></h3>
+          <p><span data-l="de">Die Netzwerkkarte verbindet beim ersten Anwenden kurz neu, also am besten vor dem Spiel. CPU-Priorität und Potato-Grafik greifen ab dem nächsten Spielstart.</span><span data-l="en">Your network card reconnects briefly the first time, so do it before playing. CPU priority and potato graphics apply from the next game start.</span></p>
+        </li>
+      </ol>
+      <div class="dl-side">
+        <div class="dl-buttons">
+          <a class="btn btn-primary" data-dl="setup" href="https://github.com/muzikadritri/RetracBoost/releases/latest/download/RetracBoost-Setup.exe">
+            <span><span>RetracBoost-Setup.exe</span><small><span data-l="de">mit Installation · </span><span data-l="en">installer · </span><span class="js-version">v1.0.5</span></small></span>
+            <svg class="arrow-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 4v13M6 11l6 6 6-6M5 21h14"/></svg>
+          </a>
+          <a class="btn btn-ghost" data-dl="exe" href="https://github.com/muzikadritri/RetracBoost/releases/latest/download/RetracBoost.exe">
+            <span><span>RetracBoost.exe</span><small><span data-l="de">ohne Installation</span><span data-l="en">portable</span></small></span>
+            <svg class="arrow-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 4v13M6 11l6 6 6-6M5 21h14"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/muzikadritri/RetracBoost/releases" target="_blank" rel="noopener">
+            <span><span><span data-l="de">Alle Versionen</span><span data-l="en">All versions</span></span><small>GitHub Releases</small></span>
+            <svg class="arrow-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
+          </a>
+        </div>
+        <dl class="req">
+          <dt>System</dt><dd>Windows 10, Windows 11</dd>
+          <dt><span data-l="de">Laufzeit</span><span data-l="en">Runtime</span></dt><dd>.NET Framework 4.8</dd>
+          <dt><span data-l="de">Rechte</span><span data-l="en">Rights</span></dt><dd><span data-l="de">Administrator</span><span data-l="en">Administrator</span></dd>
+          <dt><span data-l="de">Spiel</span><span data-l="en">Game</span></dt><dd>Fortnite (OGFN / Retrac)</dd>
+        </dl>
+        <div>
+          <h3 style="margin-bottom:12px"><span data-l="de">Selbsttest</span><span data-l="en">Self test</span></h3>
+<div class="code-box"><button type="button" class="copy" id="copyBtn"><span class="copy-a"><span data-l="de">Kopieren</span><span data-l="en">Copy</span></span><span class="copy-b"><span data-l="de">Kopiert</span><span data-l="en">Copied</span></span></button>
+<pre><code id="codeText"><span class="c"># <span data-l="de">nur lesend</span><span data-l="en">read only</span></span>
+RetracBoost.exe --selftest --out ergebnis.txt
+<span class="c"># <span data-l="de">Spielserver des laufenden Matches (Admin)</span><span data-l="en">game server of the running match (admin)</span></span>
+RetracBoost.exe --selftest --server --out server.txt</code></pre></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FAQ ===================== -->
+<section class="faq" id="fragen" aria-labelledby="faq-title">
+  <div class="wrap grid">
+    <h2 id="faq-title" class="reveal"><span data-l="de">Fragen</span><span data-l="en">Questions</span></h2>
+    <div class="faq-list">
+      <details>
+        <summary><span><span data-l="de">Verändert die App das Spiel?</span><span data-l="en">Does the app change the game?</span></span><i class="pm" aria-hidden="true"></i></summary>
+        <div class="a">
+          <p><span data-l="de">Sie öffnet nie ein Handle auf das Spiel. Die CPU-Priorität setzt Windows selbst beim Start. Das Alt+L-Fenster liegt nur darüber und ändert die Farbkurve des Bildschirms.</span><span data-l="en">It never opens a handle to the game. Windows itself sets the CPU priority on launch. The Alt+L window only sits on top and changes the screen's color curve.</span></p>
+          <p><span data-l="de">Die Potato-Grafik schreibt in die Einstellungsdateien des Spiels (Engine.ini, GameUserSettings.ini) und ins NVIDIA-Treiberprofil.</span><span data-l="en">Potato graphics writes to the game's settings files (Engine.ini, GameUserSettings.ini) and to the NVIDIA driver profile.</span></p>
+        </div>
+      </details>
+      <details>
+        <summary><span><span data-l="de">Habe ich danach sicher weniger Ping?</span><span data-l="en">Will my ping definitely drop?</span></span><i class="pm" aria-hidden="true"></i></summary>
+        <div class="a"><p><span data-l="de">Nein. Die App kann Schwankungen, Puffer und Energiesparen auf deinem PC angehen. Den Weg vom Provider zum Server ändert sie nicht. Was sich wirklich getan hat, siehst du unter dem Graphen bei Vorher und Jetzt.</span><span data-l="en">No. The app can deal with jitter, buffering and power saving on your PC. It can't change the path from your provider to the server. What actually changed shows up below the graph under Before and Now.</span></p></div>
+      </details>
+      <details>
+        <summary><span><span data-l="de">Wie mache ich alles rückgängig?</span><span data-l="en">How do I undo everything?</span></span><i class="pm" aria-hidden="true"></i></summary>
+        <div class="a"><p><span data-l="de">Über Zurücksetzen, für alles oder Zeile für Zeile. Die App stellt die gesicherten Originalwerte wieder her und löscht den angelegten Energiesparplan und ihre Firewall-Regeln.</span><span data-l="en">With Reset, for everything or row by row. The app restores the saved original values and removes the power plan and firewall rules it created.</span></p></div>
+      </details>
+      <details>
+        <summary><span><span data-l="de">Brauche ich eine NVIDIA-Karte?</span><span data-l="en">Do I need an NVIDIA card?</span></span><i class="pm" aria-hidden="true"></i></summary>
+        <div class="a"><p><span data-l="de">Nur für die Teile, die das NVIDIA-Profil setzen, also Teile vom FPS-Booster und den LOD-Bias der Potato-Grafik. Server-Lock, Ping-Werkzeuge und das Alt+L-Menü brauchen keine.</span><span data-l="en">Only for the parts that set the NVIDIA profile, meaning parts of the FPS booster and the potato graphics LOD bias. Server lock, ping tools and the Alt+L menu don't need one.</span></p></div>
+      </details>
+      <details>
+        <summary><span><span data-l="de">Warum fragt Windows nach Adminrechten?</span><span data-l="en">Why does Windows ask for admin rights?</span></span><i class="pm" aria-hidden="true"></i></summary>
+        <div class="a"><p><span data-l="de">Firewall-Regeln, Netzwerkkarte, Energiesparplan und DNS lassen sich unter Windows nur als Administrator ändern.</span><span data-l="en">Firewall rules, network card, power plan and DNS can only be changed as administrator on Windows.</span></p></div>
+      </details>
+      <details>
+        <summary><span><span data-l="de">Ist das von Epic Games?</span><span data-l="en">Is this made by Epic Games?</span></span><i class="pm" aria-hidden="true"></i></summary>
+        <div class="a"><p><span data-l="de">Nein. Retrac Boost ist ein eigenständiges Tool und hat nichts mit Epic Games oder dem Retrac-Team zu tun.</span><span data-l="en">No. Retrac Boost is an independent tool and isn't affiliated with Epic Games or the Retrac team.</span></p></div>
+      </details>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="foot-mark" id="footMark" aria-hidden="true">RETRAC <span>BOOST</span></p>
+    <div class="foot-row">
+      <span>Retrac Boost <span class="js-version">v1.0.5</span> · <span data-l="de">für Windows 10 und 11</span><span data-l="en">for Windows 10 and 11</span></span>
+      <nav aria-label="Footer">
+        <a href="https://github.com/muzikadritri/RetracBoost" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/muzikadritri/RetracBoost/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/muzikadritri/RetracBoost/issues" target="_blank" rel="noopener"><span data-l="de">Fehler melden</span><span data-l="en">Report a bug</span></a>
+        <a href="#top"><span data-l="de">Nach oben</span><span data-l="en">Back to top</span></a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><kbd>Alt</kbd><kbd>L</kbd><span><span data-l="de">Probier das Ingame-Menü direkt hier aus</span><span data-l="en">Try the in-game menu right here</span></span></div>
+<a class="to-top" id="toTop" href="#top" aria-label="Nach oben"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 19V6M6 12l6-6 6 6"/></svg></a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="gmFilter" color-interpolation-filters="sRGB">
+    <feComponentTransfer>
+      <feFuncR id="fR" type="gamma" amplitude="1" exponent="1" offset="0"/>
+      <feFuncG id="fG" type="gamma" amplitude="1" exponent="1" offset="0"/>
+      <feFuncB id="fB" type="gamma" amplitude="1" exponent="1" offset="0"/>
+    </feComponentTransfer>
+  </filter>
+</svg>
+
+<script>
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var lang = "de";
+  var langListeners = [];
+  function t(de, en) { return lang === "en" ? en : de; }
+  function onLang(fn) { langListeners.push(fn); }
+
+  /* ---------- Sprache ---------- */
+  function setLang(l) {
+    lang = l === "en" ? "en" : "de";
+    root.lang = lang;
+    document.querySelectorAll("[data-set-lang]").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-set-lang") === lang));
+    });
+    try { localStorage.setItem("rb-lang", lang); } catch (e) {}
+    langListeners.forEach(function (fn) { fn(); });
+  }
+  document.querySelectorAll("[data-set-lang]").forEach(function (b) {
+    b.addEventListener("click", function () { setLang(b.getAttribute("data-set-lang")); });
+  });
+  var stored = null;
+  try { stored = localStorage.getItem("rb-lang"); } catch (e) {}
+  var initial = stored || ((navigator.language || "de").toLowerCase().indexOf("de") === 0 ? "de" : "en");
+
+  /* ---------- Hilfen ---------- */
+  function fitCanvas(c) {
+    var r = c.getBoundingClientRect();
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    return { w: w, h: h, dpr: dpr };
+  }
+  function whenVisible(el, cb) {
+    if (!("IntersectionObserver" in window)) { cb(true); return; }
+    new IntersectionObserver(function (es) { es.forEach(function (e) { cb(e.isIntersecting); }); }, { rootMargin: "120px" }).observe(el);
+  }
+  var css = getComputedStyle(root);
+  var C = {
+    bg: css.getPropertyValue("--bg").trim() || "#0A0D14",
+    surface: css.getPropertyValue("--surface").trim() || "#111520",
+    raised: css.getPropertyValue("--raised").trim() || "#161C2B",
+    line: css.getPropertyValue("--line-strong").trim() || "#2D3850",
+    text: css.getPropertyValue("--text").trim() || "#F0F3F9",
+    muted: css.getPropertyValue("--muted").trim() || "#8B94A7",
+    accent: css.getPropertyValue("--accent").trim() || "#00F5A0",
+    bad: css.getPropertyValue("--bad").trim() || "#F87171"
+  };
+  var FONT = '"Archivo", "Segoe UI", system-ui, sans-serif';
+
+  /* ---------- Hero: Live-Ping (Beispielwerte) ---------- */
+  (function () {
+    var c = document.getElementById("pingGraph");
+    if (!c) return;
+    var ctx = c.getContext("2d");
+    var vEl = document.getElementById("pingValue");
+    var N = 90, data = [], base = 27, last = 27, seed = 7;
+    function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+    function next() {
+      var v = base + (rnd() - 0.5) * 3.2;
+      if (rnd() < 0.035) v += 4 + rnd() * 7;
+      last = last * 0.45 + v * 0.55;
+      return Math.max(18, last);
+    }
+    for (var i = 0; i < N; i++) data.push(next());
+    var running = false, visible = true, offset = 0, lastT = 0, tick = 0;
+    function stats() {
+      var s = data.slice(-40), sum = 0, mx = 0, j = 0;
+      s.forEach(function (v, k) { sum += v; mx = Math.max(mx, v); if (k) j += Math.abs(v - s[k - 1]); });
+      document.getElementById("stAvg").textContent = Math.round(sum / s.length);
+      document.getElementById("stJit").textContent = (j / (s.length - 1)).toFixed(1).replace(".", lang === "de" ? "," : ".");
+      document.getElementById("stMax").textContent = Math.round(mx);
+    }
+    function draw() {
+      var d = fitCanvas(c), w = d.w, h = d.h, p = d.dpr;
+      ctx.clearRect(0, 0, w, h);
+      var lo = 10, hi = 50, step = w / (N - 2);
+      ctx.strokeStyle = "rgba(139,148,167,0.14)"; ctx.lineWidth = 1 * p;
+      ctx.font = 10.5 * p + "px " + FONT; ctx.fillStyle = "rgba(139,148,167,0.7)";
+      [20, 30, 40].forEach(function (g) {
+        var y = h - (g - lo) / (hi - lo) * h;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        ctx.fillText(g, 4 * p, y - 4 * p);
+      });
+      function xy(k) { return [k * step - offset * step, h - (data[k] - lo) / (hi - lo) * h]; }
+      ctx.beginPath();
+      for (var k = 0; k < N; k++) { var q = xy(k); k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }
+      ctx.lineTo(w + step, h); ctx.lineTo(-step, h); ctx.closePath();
+      ctx.fillStyle = "rgba(0,245,160,0.10)"; ctx.fill();
+      ctx.beginPath();
+      for (k = 0; k < N; k++) { q = xy(k); k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }
+      ctx.strokeStyle = C.accent; ctx.lineWidth = 2 * p; ctx.lineJoin = "round"; ctx.stroke();
+      var e = xy(N - 1);
+      ctx.fillStyle = "rgba(0,245,160,0.2)"; ctx.beginPath(); ctx.arc(e[0], e[1], 7 * p, 0, 7); ctx.fill();
+      ctx.fillStyle = C.accent; ctx.beginPath(); ctx.arc(e[0], e[1], 3.4 * p, 0, 7); ctx.fill();
+    }
+    function frame(ts) {
+      if (!running) return;
+      var dt = lastT ? Math.min(64, ts - lastT) : 16; lastT = ts;
+      offset += dt / 700;
+      if (offset >= 1) {
+        offset -= 1; data.shift(); data.push(next()); tick++;
+        vEl.textContent = Math.round(data[N - 2]);
+        var np = document.getElementById("navPing"); if (np) np.textContent = Math.round(data[N - 2]);
+        if (tick % 3 === 0) stats();
+      }
+      draw();
+      requestAnimationFrame(frame);
+    }
+    function start() { if (running || reduce || !visible || document.hidden) return; running = true; lastT = 0; requestAnimationFrame(frame); }
+    function stop() { running = false; }
+    whenVisible(c, function (v) { visible = v; v ? start() : stop(); });
+    document.addEventListener("visibilitychange", function () { document.hidden ? stop() : start(); });
+    window.addEventListener("resize", draw);
+    onLang(stats);
+    stats(); draw(); start();
+    if (document.fonts) document.fonts.ready.then(draw);
+  })();
+
+  /* ---------- Server-Lock-Karte ---------- */
+  (function () {
+    var c = document.getElementById("mapCanvas");
+    if (!c) return;
+    var ctx = c.getContext("2d");
+    var B = { lon0: -12.5, lon1: 30, lat0: 35.2, lat1: 61.5 };
+    var LAND = [
+      [[-9.3,43.0],[-8,43.7],[-1.8,43.4],[3.2,42.4],[3.2,41.9],[0.9,41.0],[-0.3,39.5],[0.2,38.7],[-0.7,37.6],[-2.1,36.7],[-5.6,36.0],[-6.4,36.8],[-7.4,37.2],[-8.9,37.0],[-8.8,38.7],[-9.5,38.8],[-8.8,40.9]],
+      [[-1.8,43.4],[-1.2,46.2],[-2.5,47.3],[-4.7,48.0],[-4.5,48.6],[-1.6,48.7],[-1.3,49.7],[0.2,49.5],[1.6,50.2],[2.5,51.1],[3.6,51.4],[4.6,52.9],[6.9,53.5],[8.6,53.9],[8.7,55.0],[8.1,56.7],[10.0,57.6],[10.6,56.2],[10.0,55.0],[11.0,54.0],[12.5,54.4],[14.2,53.9],[18.5,54.8],[21.2,55.2],[21.0,56.8],[24.0,57.2],[24.4,58.4],[28.0,59.5],[31,60],[31,44],[28.6,44.0],[28.0,41.9],[26.0,40.8],[23.7,40.2],[24.0,38.0],[22.5,36.5],[21.2,37.8],[19.4,40.4],[19.5,41.8],[16.0,43.5],[13.7,45.6],[12.3,45.4],[12.4,44.2],[13.6,43.6],[16.2,41.9],[18.5,40.1],[17.0,39.0],[16.6,38.0],[15.6,38.0],[15.8,39.6],[14.0,41.0],[12.2,41.8],[10.5,43.0],[10.2,43.9],[8.7,44.4],[7.5,43.8],[6.0,43.1],[4.6,43.4],[3.2,43.2],[3.2,42.4]],
+      [[-5.7,50.0],[-3.0,50.6],[1.4,51.2],[1.7,52.7],[0.2,53.5],[-0.5,54.5],[-1.6,55.6],[-2.0,57.6],[-3.0,58.6],[-5.0,58.6],[-6.2,57.5],[-5.6,56.3],[-4.9,55.0],[-3.0,54.5],[-3.4,53.4],[-4.6,53.2],[-4.2,52.3],[-5.3,51.8],[-3.2,51.4]],
+      [[-6.0,52.2],[-6.2,53.9],[-5.5,54.6],[-7.3,55.3],[-8.5,54.4],[-10.0,53.5],[-9.6,52.6],[-10.3,51.9],[-8.5,51.6]],
+      [[5.0,62.0],[5.0,59.0],[6.0,58.1],[8.0,58.1],[10.5,59.0],[11.2,58.9],[12.0,57.5],[12.8,56.2],[14.3,55.4],[16.0,56.1],[16.5,57.0],[18.0,59.0],[17.2,60.7],[17.5,62.3],[21,62.5],[21.4,61.0],[23.0,60.0],[28.0,60.5],[31,61.5],[31,63],[5,63]],
+      [[12.4,38.1],[15.6,38.3],[15.1,36.7]],
+      [[8.4,41.1],[9.8,41.1],[9.6,39.1],[8.4,39.0]],
+      [[8.6,42.9],[9.5,42.9],[9.3,41.4],[8.7,41.6]],
+      [[23.5,35.3],[26.3,35.2],[24.5,34.9]]
+    ];
+    var REG = [
+      { id: "fra", de: "Frankfurt", en: "Frankfurt", code: "eu-central-1", lon: 8.68, lat: 50.11, ok: true },
+      { id: "lon", de: "London", en: "London", code: "eu-west-2", lon: -0.13, lat: 51.5 },
+      { id: "dub", de: "Irland", en: "Ireland", code: "eu-west-1", lon: -6.26, lat: 53.35 },
+      { id: "par", de: "Paris", en: "Paris", code: "eu-west-3", lon: 2.35, lat: 48.86 },
+      { id: "sto", de: "Stockholm", en: "Stockholm", code: "eu-north-1", lon: 18.07, lat: 59.33 },
+      { id: "mil", de: "Mailand", en: "Milan", code: "eu-south-1", lon: 9.19, lat: 45.46 },
+      { id: "esp", de: "Spanien", en: "Spain", code: "eu-south-2", lon: -0.88, lat: 41.65 },
+      { id: "zrh", de: "Zürich", en: "Zurich", code: "eu-central-2", lon: 8.54, lat: 47.37 },
+      { id: "sov", de: "Sovereign Cloud", en: "Sovereign Cloud", code: "Brandenburg", lon: 13.0, lat: 52.4 }
+    ];
+    var PC = { lon: -9.2, lat: 46.6 };
+    var locked = true, lockT = 1, visible = true, running = false, lastT = 0;
+    var intro = reduce ? 1 : 0, introStarted = reduce, hl = null, sparks = [], clock = 0, ringT = 0;
+    var W = 0, H = 0, P = 1, dots = [], packets = [];
+    var KX = Math.cos(48 * Math.PI / 180);
+    function proj(lon, lat) {
+      var sx = W / ((B.lon1 - B.lon0) * KX), sy = H / (B.lat1 - B.lat0), s = Math.min(sx, sy);
+      var ox = (W - (B.lon1 - B.lon0) * KX * s) / 2, oy = (H - (B.lat1 - B.lat0) * s) / 2;
+      return [ox + (lon - B.lon0) * KX * s, oy + (B.lat1 - lat) * s];
+    }
+    function inside(pt, poly) {
+      var x = pt[0], y = pt[1], ins = false;
+      for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        var xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+        if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) ins = !ins;
+      }
+      return ins;
+    }
+    function build() {
+      var d = fitCanvas(c); W = d.w; H = d.h; P = d.dpr;
+      dots = [];
+      var stepLat = W < 700 * P ? 0.62 : 0.48, stepLon = stepLat / KX;
+      for (var lat = B.lat0; lat <= B.lat1; lat += stepLat) {
+        for (var lon = B.lon0; lon <= B.lon1; lon += stepLon) {
+          for (var k = 0; k < LAND.length; k++) { if (inside([lon, lat], LAND[k])) { dots.push(proj(lon, lat)); break; } }
+        }
+      }
+      REG.forEach(function (r) { r.p = proj(r.lon, r.lat); });
+      PC.p = proj(PC.lon, PC.lat);
+    }
+    function ctrl(a, b) {
+      var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1];
+      return [mx - dy * 0.18, my + dx * 0.18 - Math.hypot(dx, dy) * 0.12];
+    }
+    function bez(a, q, b, t) { var u = 1 - t; return [u * u * a[0] + 2 * u * t * q[0] + t * t * b[0], u * u * a[1] + 2 * u * t * q[1] + t * t * b[1]]; }
+    var WALL = 0.2;
+    function spawn() {
+      var r = REG[Math.floor(Math.random() * REG.length)];
+      packets.push({ r: r, t: 0, v: 0.0045 + Math.random() * 0.003, dead: 0 });
+    }
+    function mix(a, b, t) { return a + (b - a) * t; }
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      var dr = Math.max(1.1, 1.35 * P * (W / (900 * P)));
+      ctx.fillStyle = "#283149";
+      for (var i = 0; i < dots.length; i++) { ctx.beginPath(); ctx.arc(dots[i][0], dots[i][1], dr, 0, 6.3); ctx.fill(); }
+      var R = Math.min(W, H);
+      // Linien
+      REG.forEach(function (r, ri) {
+        var q = ctrl(PC.p, r.p), blocked = !r.ok && lockT > 0.5;
+        var lp = Math.max(0, Math.min(1, (intro * 1.6 - ri * 0.06)));
+        lp = 1 - Math.pow(1 - lp, 3);
+        if (lp <= 0) return;
+        ctx.beginPath(); ctx.moveTo(PC.p[0], PC.p[1]);
+        if (lp >= 1) ctx.quadraticCurveTo(q[0], q[1], r.p[0], r.p[1]);
+        else { for (var s2 = 1; s2 <= 24; s2++) { var bp = bez(PC.p, q, r.p, lp * s2 / 24); ctx.lineTo(bp[0], bp[1]); } }
+        ctx.setLineDash(blocked ? [3 * P, 5 * P] : []);
+        ctx.strokeStyle = r.ok ? "rgba(0,245,160,0.55)" : blocked ? "rgba(248,113,113,0.28)" : "rgba(139,148,167,0.35)";
+        ctx.lineWidth = (r.ok ? 2 : 1.2) * P; ctx.stroke();
+      });
+      ctx.setLineDash([]);
+      // Firewall-Ring
+      if (lockT > 0.01) {
+        var rr = R * 0.105;
+        ctx.strokeStyle = "rgba(248,113,113," + (0.85 * lockT) + ")"; ctx.lineWidth = 3 * P;
+        var sweep = Math.PI * 1.04 * Math.min(1, lockT * 1.15);
+        ctx.beginPath(); ctx.arc(PC.p[0], PC.p[1], rr * mix(0.7, 1, lockT), -Math.PI * 0.62, -Math.PI * 0.62 + sweep); ctx.stroke();
+        ctx.strokeStyle = "rgba(248,113,113," + (0.25 * lockT) + ")"; ctx.lineWidth = 10 * P;
+        ctx.beginPath(); ctx.arc(PC.p[0], PC.p[1], rr * mix(0.7, 1, lockT), -Math.PI * 0.62, -Math.PI * 0.62 + sweep); ctx.stroke();
+      }
+      // Pakete
+      packets.forEach(function (k) {
+        var q = ctrl(PC.p, k.r.p), pt = bez(PC.p, q, k.r.p, k.t);
+        var a = k.dead ? Math.max(0, 1 - k.dead / 30) : 1;
+        ctx.fillStyle = k.dead ? "rgba(248,113,113," + a + ")" : (k.r.ok ? C.accent : C.text);
+        ctx.beginPath(); ctx.arc(pt[0], pt[1], (k.dead ? 2.6 + k.dead * 0.12 : 2.6) * P, 0, 6.3); ctx.fill();
+      });
+      sparks.forEach(function (sp) {
+        ctx.fillStyle = "rgba(248,113,113," + Math.max(0, 1 - sp.age / 26) + ")";
+        ctx.beginPath(); ctx.arc(sp.x, sp.y, 1.6 * P, 0, 6.3); ctx.fill();
+      });
+      // Standorte
+      ctx.textBaseline = "middle";
+      REG.forEach(function (r, ri) {
+        var blocked = !r.ok && lockT > 0.5, x = r.p[0], y = r.p[1];
+        var pop = Math.max(0, Math.min(1, intro * 2 - 0.5 - ri * 0.07));
+        if (pop <= 0) return;
+        var popE = 1 + Math.sin(pop * Math.PI) * 0.35 * (1 - pop) ;
+        var s = (r.ok ? 7 : 5) * P * (0.6 + 0.4 * pop) * popE * (hl === r.id ? 1.5 : 1);
+        ctx.globalAlpha = pop;
+        if (r.ok) {
+          for (var rg = 0; rg < 2; rg++) {
+            var ph = ((clock / 1800) + rg * 0.5) % 1;
+            ctx.strokeStyle = "rgba(0,245,160," + (0.5 * (1 - ph)) + ")"; ctx.lineWidth = 1.5 * P;
+            ctx.beginPath(); ctx.arc(x, y, s * (1.4 + ph * 4.2), 0, 6.3); ctx.stroke();
+          }
+          ctx.fillStyle = "rgba(0,245,160,0.18)"; ctx.beginPath(); ctx.arc(x, y, s * 2.4, 0, 6.3); ctx.fill();
+        }
+        if (hl === r.id && !r.ok) { ctx.strokeStyle = blocked ? "rgba(248,113,113,0.6)" : "rgba(240,243,249,0.6)"; ctx.lineWidth = 1.5 * P; ctx.beginPath(); ctx.arc(x, y, s * 2.2, 0, 6.3); ctx.stroke(); }
+        ctx.fillStyle = r.ok ? C.accent : blocked ? C.bad : C.text;
+        if (blocked) {
+          ctx.strokeStyle = C.bad; ctx.lineWidth = 2.4 * P;
+          ctx.beginPath(); ctx.moveTo(x - s, y - s); ctx.lineTo(x + s, y + s); ctx.moveTo(x + s, y - s); ctx.lineTo(x - s, y + s); ctx.stroke();
+        } else { ctx.beginPath(); ctx.arc(x, y, s, 0, 6.3); ctx.fill(); }
+        var fs = Math.max(11, Math.min(15, W / P / 58)) * P;
+        ctx.font = (r.ok ? "700 " : "500 ") + (r.ok ? fs * 1.15 : fs) + "px " + FONT;
+        ctx.fillStyle = r.ok ? C.text : blocked ? "rgba(240,243,249,0.55)" : C.text;
+        var label = lang === "en" ? r.en : r.de;
+        var right = r.id === "dub" || r.id === "lon" || r.id === "esp" || r.id === "par";
+        var off = (r.ok ? 16 : 11) * P;
+        if (r.id === "zrh" || r.id === "mil") { ctx.textAlign = "right"; ctx.fillText(label, x - off, y); }
+        else if (right && r.id !== "par") { ctx.textAlign = "right"; ctx.fillText(label, x - off, y); }
+        else { ctx.textAlign = "left"; ctx.fillText(label, x + off, y + (r.id === "sov" ? -4 * P : 0)); }
+      });
+      ctx.globalAlpha = 1;
+      // PC
+      var bw = 92 * P, bh = 34 * P, px = PC.p[0], py = PC.p[1];
+      ctx.fillStyle = C.raised; ctx.fillRect(px - bw / 2, py - bh / 2, bw, bh);
+      ctx.fillStyle = C.text; ctx.textAlign = "center"; ctx.font = "700 " + 12.5 * P + "px " + FONT;
+      ctx.fillText(t("Dein PC", "Your PC"), px, py);
+      ctx.textAlign = "left";
+    }
+    function step(dt) {
+      clock += dt;
+      if (introStarted && intro < 1) intro = Math.min(1, intro + dt / 1500);
+      sparks.forEach(function (sp) { sp.x += sp.vx * dt / 16; sp.y += sp.vy * dt / 16; sp.vx *= 0.94; sp.vy *= 0.94; sp.age += dt / 16; });
+      sparks = sparks.filter(function (sp) { return sp.age < 26; });
+      var target = locked ? 1 : 0;
+      lockT += (target - lockT) * Math.min(1, dt / 160);
+      if (intro > 0.7 && Math.random() < dt / 70) spawn();
+      packets.forEach(function (k) {
+        if (k.dead) { k.dead += dt / 16; return; }
+        k.t += k.v * dt / 16;
+        if (!k.r.ok && lockT > 0.5 && k.t >= WALL && k.t < WALL + 0.05) {
+          k.t = WALL; k.dead = 1;
+          var q2 = ctrl(PC.p, k.r.p), at = bez(PC.p, q2, k.r.p, WALL);
+          for (var n2 = 0; n2 < 6; n2++) { var an = Math.random() * 6.3, sv = (1 + Math.random() * 2) * P; sparks.push({ x: at[0], y: at[1], vx: Math.cos(an) * sv, vy: Math.sin(an) * sv, age: 0 }); }
+        }
+      });
+      packets = packets.filter(function (k) { return k.t < 1 && (!k.dead || k.dead < 30); });
+    }
+    function frame(ts) {
+      if (!running) return;
+      var dt = lastT ? Math.min(64, ts - lastT) : 16; lastT = ts;
+      step(dt); draw(); requestAnimationFrame(frame);
+    }
+    function start() { if (running || reduce || !visible || document.hidden) return; running = true; lastT = 0; requestAnimationFrame(frame); }
+    function stop() { running = false; }
+    function staticFrame() {
+      packets = [];
+      REG.forEach(function (r, i) {
+        if (r.ok) { packets.push({ r: r, t: 0.35, v: 0, dead: 0 }); packets.push({ r: r, t: 0.7, v: 0, dead: 0 }); }
+        else if (!locked) packets.push({ r: r, t: 0.3 + (i % 4) * 0.12, v: 0, dead: 0 });
+        else if (i % 2) packets.push({ r: r, t: WALL, v: 0, dead: 8 });
+      });
+      lockT = locked ? 1 : 0; draw();
+    }
+    var list = document.getElementById("regionList");
+    var status = document.getElementById("mapStatus");
+    function renderList() {
+      list.innerHTML = "";
+      REG.forEach(function (r) {
+        var li = document.createElement("li");
+        li.setAttribute("data-id", r.id);
+        var st = r.ok ? t("offen", "open") : (locked ? t("gesperrt", "blocked") : t("offen", "open"));
+        li.innerHTML = "<span><b></b> " + "<span></span></span><span class='st " + (r.ok || !locked ? "ok" : "no") + "'></span>";
+        li.querySelector("b").textContent = lang === "en" ? r.en : r.de;
+        li.querySelector("span span").textContent = r.code;
+        li.querySelector(".st").textContent = st;
+        list.appendChild(li);
+      });
+      var n = REG.filter(function (r) { return !r.ok; }).length;
+      status.innerHTML = locked
+        ? t("<strong>An.</strong> " + n + " Standorte gesperrt, Frankfurt offen.", "<strong>On.</strong> " + n + " locations blocked, Frankfurt open.")
+        : t("<strong>Aus.</strong> Das Spiel darf jeden Standort nehmen.", "<strong>Off.</strong> The game may pick any location.");
+    }
+    var btn = document.getElementById("lockToggle");
+    btn.addEventListener("click", function () {
+      locked = !locked; btn.setAttribute("aria-pressed", String(locked)); renderList();
+      if (reduce) staticFrame();
+    });
+    whenVisible(c, function (v) { visible = v; if (v) introStarted = true; v ? start() : stop(); });
+    document.addEventListener("visibilitychange", function () { document.hidden ? stop() : start(); });
+    window.addEventListener("resize", function () { build(); reduce ? staticFrame() : draw(); });
+    list.addEventListener("pointerover", function (e) { var li = e.target.closest("li"); if (!li) return; hl = li.getAttribute("data-id"); if (!running) draw(); });
+    list.addEventListener("pointerleave", function () { hl = null; if (!running) draw(); });
+    onLang(function () { renderList(); if (!running) staticFrame(); });
+    build(); renderList();
+    draw(); if (reduce) staticFrame(); start();
+    if (document.fonts) document.fonts.ready.then(function () { if (!running) draw(); });
+  })();
+
+  /* ---------- Spielserver-Route ---------- */
+  (function () {
+    var ol = document.getElementById("hops");
+    if (!ol) return;
+    var hops = [
+      ["Router", 1], ["Provider", 6], ["Provider", 9], ["DE-CIX Frankfurt", 14], ["Amazon AWS", 21], ["eu-central-1", 24]
+    ];
+    function render() {
+      ol.innerHTML = "";
+      hops.forEach(function (h, i) {
+        var li = document.createElement("li");
+        var name = h[0] === "Router" ? t("Router · Heimnetz", "Router · home network") : h[0];
+        li.innerHTML = "<span class='n'></span><span class='h'></span><span class='t'></span><span class='bar'><i></i></span>";
+        li.querySelector(".n").textContent = i + 1;
+        li.querySelector(".h").textContent = name;
+        li.querySelector(".t").textContent = h[1] + " ms";
+        li.querySelector("i").style.transform = "scaleX(" + (h[1] / 24) + ")";
+        ol.appendChild(li);
+      });
+    }
+    render(); onLang(render);
+    if (reduce) return;
+    var played = false;
+    whenVisible(ol, function (v) {
+      if (!v || played) return; played = true;
+      Array.prototype.forEach.call(ol.children, function (li, i) {
+        li.animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: 420, delay: 120 + i * 90, easing: "cubic-bezier(0.23,1,0.32,1)", fill: "backwards" });
+        li.querySelector("i").animate([{ transform: "scaleX(0)" }, { transform: li.querySelector("i").style.transform }], { duration: 700, delay: 220 + i * 90, easing: "cubic-bezier(0.23,1,0.32,1)", fill: "backwards" });
+      });
+    });
+    if (!reduce) {
+      var hi = 0;
+      setInterval(function () {
+        if (document.hidden) return;
+        var lis = ol.children; if (!lis.length) return;
+        Array.prototype.forEach.call(lis, function (li) { li.classList.remove("hit"); });
+        if (hi < lis.length) lis[hi].classList.add("hit");
+        hi = (hi + 1) % (lis.length + 3);
+      }, 420);
+    }
+    var ms = document.getElementById("srvMs"), base = 24;
+    setInterval(function () { if (!document.hidden) ms.textContent = base + Math.round((Math.random() - 0.4) * 2); }, 1200);
+  })();
+
+  /* ---------- Boost-Schalter ---------- */
+  (function () {
+    var items = Array.prototype.slice.call(document.querySelectorAll("#tweaks .tweak"));
+    var count = document.getElementById("onCount");
+    var state = document.getElementById("boostState");
+    var all = document.getElementById("boostAll");
+    function update() {
+      var n = items.filter(function (li) { return li.classList.contains("on"); }).length;
+      if (String(n) !== count.textContent && !reduce) {
+        count.animate([{ transform: "translateY(45%)", opacity: 0, filter: "blur(4px)" }, { transform: "none", opacity: 1, filter: "blur(0)" }], { duration: 320, easing: "cubic-bezier(0.23,1,0.32,1)" });
+      }
+      count.textContent = n;
+      state.textContent = n === 0 ? t("Noch nichts geändert.", "Nothing changed yet.")
+        : n === 5 ? t("Alles an. Zurücksetzen nimmt jede Zeile einzeln zurück.", "All on. Reset undoes each row on its own.")
+        : t(n + " von 5 an. Der Rest bleibt, wie er ist.", n + " of 5 on. The rest stays as it is.");
+      all.querySelector('[data-l="de"]').textContent = n === 5 ? "Alles zurücksetzen" : "Alles boosten";
+      all.querySelector('[data-l="en"]').textContent = n === 5 ? "Reset all" : "Boost all";
+      all.classList.toggle("btn-ghost", n === 5); all.classList.toggle("btn-primary", n !== 5);
+    }
+    function set(li, on) {
+      if (on && !li.classList.contains("on") && !reduce) {
+        var pulse = document.createElement("i"); pulse.className = "pulse"; li.appendChild(pulse);
+        pulse.animate([{ transform: "scale(0.4)", opacity: 0.35 }, { transform: "scale(3.2)", opacity: 0 }], { duration: 650, easing: "cubic-bezier(0.23,1,0.32,1)" }).onfinish = function () { pulse.remove(); };
+        if (navigator.vibrate) { try { navigator.vibrate(8); } catch (e) {} }
+      }
+      li.classList.toggle("on", on);
+      li.querySelector("[role=switch]").setAttribute("aria-checked", String(on));
+    }
+    items.forEach(function (li) {
+      li.querySelector("[role=switch]").addEventListener("click", function () { set(li, !li.classList.contains("on")); update(); });
+    });
+    var timers = [];
+    all.addEventListener("click", function () {
+      timers.forEach(clearTimeout); timers = [];
+      var allOn = items.every(function (li) { return li.classList.contains("on"); });
+      items.forEach(function (li, i) {
+        timers.push(setTimeout(function () { set(li, !allOn); update(); }, reduce ? 0 : i * 110));
+      });
+    });
+    onLang(update); update();
+  })();
+
+  /* ---------- Alt+L ---------- */
+  (function () {
+    var screen = document.getElementById("screen");
+    if (!screen) return;
+    var game = document.getElementById("sceneGame"), desk = document.getElementById("sceneDesk");
+    var gm = document.getElementById("gm");
+    var inputs = { g: document.getElementById("gGamma"), b: document.getElementById("gBright"), c: document.getElementById("gContrast"), w: document.getElementById("gWarm") };
+    var outs = { g: document.getElementById("oGamma"), b: document.getElementById("oBright"), c: document.getElementById("oContrast"), w: document.getElementById("oWarm") };
+    var fR = document.getElementById("fR"), fG = document.getElementById("fG"), fB = document.getElementById("fB");
+    var stateEl = document.getElementById("screenState");
+    var inGame = true, open = true;
+
+    var gt = 0;
+    function drawGame() {
+      var d = fitCanvas(game), w = d.w, h = d.h, ctx = game.getContext("2d");
+      ctx.fillStyle = "#7FB4E0"; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "#A9CFEE"; ctx.fillRect(0, h * 0.34, w, h * 0.12);
+      ctx.fillStyle = "#FFE7A3"; ctx.beginPath(); ctx.arc(w * 0.2, h * 0.22, h * 0.07, 0, 7); ctx.fill();
+      function cloud(x, y, s) { ctx.fillStyle = "#EAF4FC"; [[0,0,1],[0.9,-0.3,1.2],[1.9,0,0.9]].forEach(function (c) { ctx.beginPath(); ctx.arc(x + c[0] * s, y + c[1] * s, c[2] * s, 0, 7); ctx.fill(); }); }
+      var cx1 = ((0.42 + gt * 0.006) % 1.2) - 0.1, cx2 = ((0.7 + gt * 0.004) % 1.2) - 0.1, cx3 = ((0.05 + gt * 0.005) % 1.2) - 0.1;
+      cloud(w * cx1, h * 0.16, h * 0.035); cloud(w * cx2, h * 0.24, h * 0.028); cloud(w * cx3, h * 0.11, h * 0.022);
+      function hill(y0, amp, col, f) { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, h); for (var x = 0; x <= w; x += w / 60) ctx.lineTo(x, y0 + Math.sin(x / w * f + y0) * amp); ctx.lineTo(w, y0 + Math.sin(f + y0) * amp); ctx.lineTo(w, h); ctx.fill(); }
+      hill(h * 0.5, h * 0.05, "#5C8F9E", 5); hill(h * 0.58, h * 0.04, "#3F7F57", 7); hill(h * 0.7, h * 0.03, "#2E6B3F", 9);
+      ctx.fillStyle = "#3C78B8"; ctx.fillRect(0, h * 0.86, w, h * 0.14);
+      ctx.fillStyle = "#4E8BCB"; for (var i = 0; i < 9; i++) ctx.fillRect(w * (((i / 9 + 0.02 + gt * 0.01 * (i % 2 ? 1 : -0.6)) % 1 + 1) % 1), h * 0.9 + (i % 2) * h * 0.03, w * 0.05, h * 0.006);
+      // Turm
+      var tx = w * 0.6, ty = h * 0.42, tw = w * 0.07, th = h * 0.32;
+      ctx.fillStyle = "#8B5E3C"; ctx.fillRect(tx, ty, tw, th);
+      ctx.fillStyle = "#6E4A2F"; for (var r = 0; r < 5; r++) ctx.fillRect(tx, ty + r * th / 5, tw, h * 0.008);
+      ctx.fillStyle = "#A5734A"; ctx.fillRect(tx - tw * 0.2, ty - h * 0.03, tw * 1.4, h * 0.035);
+      // Bäume
+      [[0.12,0.66,1],[0.2,0.7,0.8],[0.82,0.64,1.1],[0.9,0.69,0.85],[0.36,0.67,0.9]].forEach(function (b) {
+        var x = w * b[0], y = h * b[1], s = h * 0.06 * b[2];
+        ctx.fillStyle = "#5B3A22"; ctx.fillRect(x - s * 0.12, y, s * 0.24, s * 0.9);
+        ctx.fillStyle = "#24592F"; ctx.beginPath(); ctx.moveTo(x - s * 0.7, y + s * 0.2); ctx.lineTo(x, y - s * 1.3); ctx.lineTo(x + s * 0.7, y + s * 0.2); ctx.fill();
+      });
+      // Schatten im Vordergrund zeigt Gamma-Wirkung
+      ctx.fillStyle = "#14241A"; ctx.beginPath(); ctx.moveTo(0, h); ctx.lineTo(0, h * 0.74); ctx.lineTo(w * 0.32, h * 0.8); ctx.lineTo(w * 0.36, h); ctx.fill();
+      ctx.fillStyle = "#1E3526"; ctx.fillRect(w * 0.05, h * 0.82, w * 0.05, h * 0.06);
+      ctx.fillStyle = "#2A4733"; ctx.fillRect(w * 0.15, h * 0.85, w * 0.04, h * 0.05);
+      // HUD
+      var p = d.dpr, sc = w / (900 * p);
+      ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(w * 0.02, h * 0.04, w * 0.16, h * 0.08);
+      ctx.fillStyle = "#fff"; ctx.font = "700 " + Math.round(15 * p * Math.max(sc, 0.6)) + "px " + FONT; ctx.textBaseline = "middle";
+      ctx.fillText((26 + Math.round(Math.sin(gt * 1.3) * 1.5)) + " ms", w * 0.035, h * 0.08);
+      ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(w * 0.3, h * 0.9, w * 0.4, h * 0.06);
+      for (var s2 = 0; s2 < 5; s2++) { ctx.fillStyle = s2 === 1 ? "#FFD25A" : "rgba(255,255,255,0.75)"; ctx.fillRect(w * (0.31 + s2 * 0.078), h * 0.91, w * 0.07, h * 0.04); }
+    }
+    function drawDesk() {
+      var d = fitCanvas(desk), w = d.w, h = d.h, ctx = desk.getContext("2d"), p = d.dpr, sc = Math.max(0.6, w / (900 * p));
+      ctx.fillStyle = "#1B3A5C"; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "#24507A"; ctx.beginPath(); ctx.ellipse(w * 0.5, h * 1.1, w * 0.7, h * 0.6, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = "#2E6597"; ctx.beginPath(); ctx.ellipse(w * 0.5, h * 1.25, w * 0.5, h * 0.55, 0, 0, 7); ctx.fill();
+      // Fenster: Discord-ähnlicher Chat, neutral
+      var x = w * 0.1, y = h * 0.1, ww = w * 0.48, wh = h * 0.64;
+      ctx.fillStyle = "#2B2F3A"; ctx.fillRect(x, y, ww, wh);
+      ctx.fillStyle = "#1F222A"; ctx.fillRect(x, y, ww, h * 0.06); ctx.fillRect(x, y + h * 0.06, ww * 0.22, wh - h * 0.06);
+      for (var i = 0; i < 5; i++) { ctx.fillStyle = "#3A3F4D"; ctx.fillRect(x + ww * 0.27, y + h * (0.11 + i * 0.1), ww * (0.5 - (i % 3) * 0.1), h * 0.03); }
+      ctx.fillStyle = "#fff"; ctx.font = "600 " + Math.round(12 * p * sc) + "px " + FONT; ctx.textBaseline = "middle";
+      ctx.fillText("Chat", x + ww * 0.03, y + h * 0.03);
+      // Explorer
+      var x2 = w * 0.5, y2 = h * 0.3, w2 = w * 0.42, h2 = h * 0.5;
+      ctx.fillStyle = "#F3F3F3"; ctx.fillRect(x2, y2, w2, h2);
+      ctx.fillStyle = "#E1E1E1"; ctx.fillRect(x2, y2, w2, h * 0.06);
+      ctx.fillStyle = "#1A1A1A"; ctx.fillText(t("Dokumente", "Documents"), x2 + w2 * 0.04, y2 + h * 0.03);
+      for (i = 0; i < 4; i++) { ctx.fillStyle = "#F7C948"; ctx.fillRect(x2 + w2 * 0.05, y2 + h * (0.1 + i * 0.09), w2 * 0.07, h * 0.05); ctx.fillStyle = "#C7C7C7"; ctx.fillRect(x2 + w2 * 0.16, y2 + h * (0.115 + i * 0.09), w2 * 0.5, h * 0.02); }
+      // Taskleiste
+      ctx.fillStyle = "#202020"; ctx.fillRect(0, h * 0.92, w, h * 0.08);
+      for (i = 0; i < 5; i++) { ctx.fillStyle = i === 0 ? "#3B82F6" : "#4A4A4A"; ctx.fillRect(w * (0.4 + i * 0.045), h * 0.94, w * 0.03, h * 0.04); }
+      ctx.fillStyle = "#ddd"; ctx.textAlign = "right"; ctx.fillText("21:40", w * 0.97, h * 0.96); ctx.textAlign = "left";
+    }
+    function apply() {
+      var g = +inputs.g.value, b = +inputs.b.value, c = +inputs.c.value, w = +inputs.w.value;
+      var dec = function (v) { var s = v.toFixed(2); return lang === "de" ? s.replace(".", ",") : s; };
+      outs.g.textContent = dec(g); outs.b.textContent = (b > 0 ? "+" : "") + dec(b); outs.c.textContent = dec(c); outs.w.textContent = (w > 0 ? "+" : "") + dec(w);
+      var off = 0.5 * (1 - c) + b, ex = 1 / g;
+      fR.setAttribute("amplitude", c * (1 + 0.14 * w)); fG.setAttribute("amplitude", c * (1 + 0.03 * w)); fB.setAttribute("amplitude", c * (1 - 0.16 * w));
+      [fR, fG, fB].forEach(function (f) { f.setAttribute("exponent", ex); f.setAttribute("offset", off); });
+      var changed = g !== 1 || b !== 0 || c !== 1 || w !== 0;
+      game.style.filter = changed ? "url(#gmFilter)" : "none";
+      stateEl.innerHTML = inGame
+        ? (changed ? t("<strong>Spiel vorne.</strong> Deine Werte gelten auf diesem Bildschirm.", "<strong>Game in front.</strong> Your values apply on this screen.")
+                   : t("<strong>Spiel vorne.</strong> Noch Standardwerte. Schieb einen Regler.", "<strong>Game in front.</strong> Default values. Move a slider."))
+        : t("<strong>Desktop.</strong> Normale Farben. Beim Zurücktabben kommen deine Werte wieder.", "<strong>Desktop.</strong> Normal colors. Tab back in and your values return.");
+    }
+    function setOpen(o) { open = o; gm.classList.toggle("closed", !o); }
+    function setFg(g) {
+      inGame = g; screen.classList.toggle("desk", !g);
+      document.getElementById("fgGame").setAttribute("aria-pressed", String(g));
+      document.getElementById("fgDesk").setAttribute("aria-pressed", String(!g));
+      apply();
+    }
+    Object.keys(inputs).forEach(function (k) {
+      inputs[k].addEventListener("input", function () {
+        apply();
+        if (!reduce) { outs[k].classList.add("bump"); clearTimeout(outs[k]._t); outs[k]._t = setTimeout(function () { outs[k].classList.remove("bump"); }, 140); }
+      });
+    });
+    document.getElementById("gReset").addEventListener("click", function () {
+      var from = { g: +inputs.g.value, b: +inputs.b.value, c: +inputs.c.value, w: +inputs.w.value }, to = { g: 1, b: 0, c: 1, w: 0 };
+      if (reduce) { Object.keys(to).forEach(function (k) { inputs[k].value = to[k]; }); apply(); return; }
+      var t0 = null;
+      (function tw(ts) {
+        if (!t0) t0 = ts; var k2 = Math.min(1, (ts - t0) / 380), e2 = 1 - Math.pow(1 - k2, 3);
+        Object.keys(to).forEach(function (k) { inputs[k].value = from[k] + (to[k] - from[k]) * e2; });
+        apply(); if (k2 < 1) requestAnimationFrame(tw);
+      })(performance.now());
+    });
+    document.getElementById("fgGame").addEventListener("click", function () { setFg(true); });
+    document.getElementById("fgDesk").addEventListener("click", function () { setFg(false); });
+    document.addEventListener("keydown", function (e) {
+      if (e.altKey && (e.key === "l" || e.key === "L" || e.code === "KeyL")) {
+        e.preventDefault();
+        document.querySelectorAll("kbd").forEach(function (k) { k.classList.add("down"); setTimeout(function () { k.classList.remove("down"); }, 160); });
+        var tEl2 = document.getElementById("toast"); if (tEl2) tEl2.classList.remove("show");
+        if (!inGame) setFg(true);
+        setOpen(!open);
+      } else if (e.key === "Escape" && open && inGame) {
+        var r = screen.getBoundingClientRect();
+        if (r.bottom > 0 && r.top < innerHeight) setOpen(false);
+      }
+    });
+    // Startwerte, damit der Effekt sofort sichtbar ist
+    inputs.g.value = 1.35; inputs.b.value = 0.04; inputs.c.value = 1.08; inputs.w.value = 0.2;
+    function redraw() { drawGame(); drawDesk(); }
+    if (!reduce) {
+      var gVis = false, gLast = 0;
+      whenVisible(screen, function (v) { gVis = v; if (v) requestAnimationFrame(loop); });
+      function loop(ts) {
+        if (!gVis || document.hidden) return;
+        if (ts - gLast > 33) { gt += (ts - gLast) / 1000; if (gt > 1e5) gt = 0; gLast = ts; if (inGame) drawGame(); }
+        requestAnimationFrame(loop);
+      }
+      var toastShown = false;
+      whenVisible(screen, function (v) {
+        if (!v || toastShown) return; toastShown = true;
+        var tEl = document.getElementById("toast");
+        if (!tEl || matchMedia("(hover: none)").matches) return;
+        setTimeout(function () { tEl.classList.add("show"); }, 500);
+        setTimeout(function () { tEl.classList.remove("show"); }, 4200);
+      });
+    }
+    window.addEventListener("resize", redraw);
+    onLang(function () { drawDesk(); apply(); });
+    redraw(); apply();
+    if (document.fonts) document.fonts.ready.then(redraw);
+  })();
+
+  /* ---------- Potato ---------- */
+  (function () {
+    var cmp = document.getElementById("compare");
+    if (!cmp) return;
+    var before = document.getElementById("texBefore"), after = document.getElementById("texAfter");
+    var handle = document.getElementById("handle"), tag = document.getElementById("tagR");
+    var LV = [
+      { k: "stealth", de: "Dezent", en: "Subtle", bias: "±0", blur: 0, flat: 0.35,
+        ide: "Texturen bleiben scharf. Aus: Schatten, Gras, Bloom, Umgebungsverdeckung und Nachbearbeitung.",
+        ien: "Textures stay sharp. Off: shadows, grass, bloom, ambient occlusion and post processing." },
+      { k: "clean", de: "Leicht", en: "Light", bias: "+1,0", blur: 1.4, flat: 0.5,
+        ide: "LOD-Bias +1,0. Glattere Texturen, Hügel und Kanten bleiben normal.",
+        ien: "LOD bias +1.0. Smoother textures, hills and edges stay normal." },
+      { k: "medium", de: "Mittel", en: "Medium", bias: "+1,5", blur: 2.4, flat: 0.6,
+        ide: "LOD-Bias +1,5. Der typische Potato-Look, Berge bleiben rund.",
+        ien: "LOD bias +1.5. The typical potato look, mountains stay round." },
+      { k: "strong", de: "Stark", en: "Strong", bias: "+3,0", blur: 5, flat: 0.75,
+        ide: "LOD-Bias +3,0. Kaum noch Texturen, Berge bleiben rund.",
+        ien: "LOD bias +3.0. Hardly any textures left, mountains stay round." },
+      { k: "ultra", de: "Extrem", en: "Extreme", bias: "+15", blur: 16, flat: 0.95,
+        ide: "LOD-Bias +15. Keine Texturen mehr, alles sieht aus wie Knete.",
+        ien: "LOD bias +15. No textures at all, everything looks like clay." }
+    ];
+    var cur = 2, pos = 0.5;
+    function texture(cv, shadows) {
+      var d = fitCanvas(cv), w = d.w, h = d.h, ctx = cv.getContext("2d");
+      var seed = 11; function r() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+      // Steinwand oben
+      ctx.fillStyle = "#6B6F78"; ctx.fillRect(0, 0, w, h * 0.55);
+      var bw = w / 7, bh = h * 0.55 / 6;
+      for (var y = 0; y < 6; y++) for (var x = -1; x < 8; x++) {
+        var ox = (y % 2) * bw / 2, l = 92 + r() * 40;
+        ctx.fillStyle = "rgb(" + (l + 18) + "," + (l + 10) + "," + l + ")";
+        ctx.fillRect(x * bw + ox + 3, y * bh + 3, bw - 6, bh - 6);
+        for (var s = 0; s < 26; s++) { ctx.fillStyle = r() < 0.5 ? "rgba(0,0,0,0.22)" : "rgba(255,255,255,0.16)"; ctx.fillRect(x * bw + ox + 3 + r() * (bw - 8), y * bh + 3 + r() * (bh - 8), 2 + r() * 5, 2 + r() * 3); }
+      }
+      // Boden: Gras mit Halmen
+      ctx.fillStyle = "#3E7A34"; ctx.fillRect(0, h * 0.55, w, h * 0.45);
+      for (var g = 0; g < 1600; g++) {
+        var gx = r() * w, gy = h * 0.56 + r() * h * 0.44, gl = 4 + r() * 12;
+        ctx.strokeStyle = r() < 0.5 ? "#5DA14A" : "#2C5E25"; ctx.lineWidth = 1 + r() * 1.5;
+        ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + (r() - 0.5) * 6, gy - gl); ctx.stroke();
+      }
+      // Holzkiste
+      var cx = w * 0.56, cy = h * 0.44, cs = h * 0.3;
+      ctx.fillStyle = "#9A6A3D"; ctx.fillRect(cx, cy, cs, cs);
+      ctx.fillStyle = "#7B5230"; for (var k = 0; k < 5; k++) ctx.fillRect(cx, cy + k * cs / 5, cs, 3);
+      ctx.lineWidth = 6; ctx.strokeStyle = "#5E3D22"; ctx.strokeRect(cx + 3, cy + 3, cs - 6, cs - 6);
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + cs, cy + cs); ctx.stroke();
+      if (shadows) {
+        ctx.fillStyle = "rgba(0,0,0,0.38)";
+        ctx.beginPath(); ctx.moveTo(cx - cs * 0.5, cy + cs); ctx.lineTo(cx, cy + cs); ctx.lineTo(cx + cs, cy + cs); ctx.lineTo(cx + cs * 0.4, cy + cs * 1.25); ctx.lineTo(cx - cs * 0.9, cy + cs * 1.25); ctx.fill();
+        ctx.fillStyle = "rgba(255,240,200,0.12)"; ctx.fillRect(0, 0, w, h * 0.55);
+      }
+    }
+    function paint() { texture(before, true); texture(after, false); applyLevel(); }
+    function applyLevel() {
+      var l = LV[cur];
+      var px = l.blur * (after.width / after.getBoundingClientRect().width || 1) / 1;
+      after.style.filter = "blur(" + l.blur + "px) saturate(" + (1 - l.flat * 0.35) + ") contrast(" + (1 - l.flat * 0.25) + ")";
+      var newTag = lang === "en" ? l.en : l.de;
+      if (tag.textContent !== newTag && !reduce && tag.textContent) {
+        tag.classList.add("swap");
+        setTimeout(function () { tag.textContent = newTag; tag.classList.remove("swap"); }, 150);
+      } else tag.textContent = newTag;
+      var lb = document.getElementById("lodBig");
+      if (lb) { var nb = lang === "en" ? l.bias.replace(",", ".") : l.bias; if (lb.textContent !== nb && !reduce) lb.animate([{ transform: "translateY(-8px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 260, easing: "cubic-bezier(0.23,1,0.32,1)" }); lb.textContent = nb; }
+      document.getElementById("levelInfo").textContent = lang === "en" ? l.ien : l.ide;
+      Array.prototype.forEach.call(document.querySelectorAll("#levels button"), function (b, i) { b.setAttribute("aria-pressed", String(i === cur)); });
+    }
+    var lvBox = document.getElementById("levels");
+    function renderLevels() {
+      lvBox.innerHTML = "";
+      LV.forEach(function (l, i) {
+        var b = document.createElement("button"); b.type = "button";
+        b.innerHTML = "<b></b><small></small>";
+        b.querySelector("b").textContent = lang === "en" ? l.en : l.de;
+        b.querySelector("small").textContent = "LOD " + (lang === "en" ? l.bias.replace(",", ".") : l.bias);
+        b.addEventListener("click", function () { cur = i; applyLevel(); });
+        lvBox.appendChild(b);
+      });
+      applyLevel();
+    }
+    function setPos(p) {
+      pos = Math.max(0.04, Math.min(0.96, p));
+      after.style.clipPath = "inset(0 0 0 " + (pos * 100) + "%)";
+      handle.style.left = pos * 100 + "%";
+      handle.setAttribute("aria-valuenow", Math.round(pos * 100));
+    }
+    var drag = false;
+    cmp.addEventListener("pointerdown", function (e) { drag = true; cmp.setPointerCapture(e.pointerId); move(e); });
+    cmp.addEventListener("pointermove", function (e) { if (drag) move(e); });
+    cmp.addEventListener("pointerup", function () { drag = false; });
+    cmp.addEventListener("pointercancel", function () { drag = false; });
+    function move(e) { var r = cmp.getBoundingClientRect(); setPos((e.clientX - r.left) / r.width); }
+    handle.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowLeft") { setPos(pos - 0.05); e.preventDefault(); }
+      if (e.key === "ArrowRight") { setPos(pos + 0.05); e.preventDefault(); }
+    });
+    window.addEventListener("resize", paint);
+    onLang(renderLevels);
+    paint(); renderLevels(); setPos(0.5);
+    if (!reduce) {
+      var hinted = false;
+      whenVisible(cmp, function (v) {
+        if (!v || hinted) return; hinted = true;
+        var t0 = null;
+        function hint(ts) {
+          if (drag) return;
+          if (!t0) t0 = ts;
+          var k = Math.min(1, (ts - t0) / 1600);
+          setPos(0.5 + Math.sin(k * Math.PI * 2) * 0.16 * (1 - k));
+          if (k < 1) requestAnimationFrame(hint);
+        }
+        setTimeout(function () { requestAnimationFrame(hint); }, 500);
+      });
+    }
+  })();
+
+  /* ---------- Bufferbloat-Note ---------- */
+  (function () {
+    var range = document.getElementById("bloatRange");
+    if (!range) return;
+    var letter = document.getElementById("gradeLetter"), msEl = document.getElementById("gradeMs");
+    var cells = document.querySelectorAll("#gradeScale div");
+    function grade(d) { return d < 5 ? 0 : d < 30 ? 1 : d < 60 ? 2 : d < 200 ? 3 : d < 400 ? 4 : 5; }
+    var names = ["A+", "A", "B", "C", "D", "F"];
+    var last = -1;
+    function update() {
+      var d = +range.value, g = grade(d);
+      msEl.textContent = "+" + d;
+      cells.forEach(function (c, i) { c.classList.toggle("on", i === g); });
+      if (g !== last) {
+        letter.textContent = names[g];
+        letter.style.color = g <= 1 ? C.accent : g === 2 ? "#FBBF24" : C.bad;
+        if (!reduce && last !== -1) letter.animate([{ transform: "translateY(10px)", opacity: 0.3 }, { transform: "none", opacity: 1 }], { duration: 220, easing: "cubic-bezier(0.23,1,0.32,1)" });
+        last = g;
+      }
+    }
+    range.addEventListener("input", update); update();
+    var cv = document.getElementById("bloatChart");
+    if (cv) {
+      var cx = cv.getContext("2d"), idle = [], load = [], N2 = 60, shown = +range.value;
+      for (var q = 0; q < N2; q++) { idle.push(18 + Math.random() * 2); load.push(18 + shown + Math.random() * 4); }
+      var vis2 = false, lastT2 = 0, acc = 0;
+      function drawB() {
+        var d = fitCanvas(cv), w = d.w, h = d.h, p = d.dpr;
+        cx.clearRect(0, 0, w, h);
+        var hi = Math.max(80, shown * 1.25 + 40);
+        function y(v) { return h - 4 * p - (v / hi) * (h - 10 * p); }
+        function line(arr, col, wd) { cx.beginPath(); arr.forEach(function (v, i) { var x = i / (N2 - 1) * w; i ? cx.lineTo(x, y(v)) : cx.moveTo(x, y(v)); }); cx.strokeStyle = col; cx.lineWidth = wd * p; cx.lineJoin = "round"; cx.stroke(); }
+        cx.fillStyle = "rgba(0,245,160,0.08)"; cx.beginPath(); load.forEach(function (v, i) { var x = i / (N2 - 1) * w; i ? cx.lineTo(x, y(v)) : cx.moveTo(x, y(v)); }); idle.slice().reverse().forEach(function (v, i) { cx.lineTo((N2 - 1 - i) / (N2 - 1) * w, y(v)); }); cx.closePath(); cx.fill();
+        line(idle, C.muted, 1.5); line(load, C.accent, 2);
+      }
+      function tickB(ts) {
+        if (!vis2) return;
+        var dt = lastT2 ? ts - lastT2 : 16; lastT2 = ts; acc += dt;
+        shown += (+range.value - shown) * Math.min(1, dt / 120);
+        if (acc > 90) { acc = 0; idle.shift(); idle.push(18 + Math.random() * 2); load.shift(); load.push(18 + shown * (0.85 + Math.random() * 0.3) + Math.random() * 3); }
+        drawB(); requestAnimationFrame(tickB);
+      }
+      if (reduce) drawB();
+      else whenVisible(cv, function (v) { vis2 = v; if (v) { lastT2 = 0; requestAnimationFrame(tickB); } });
+      window.addEventListener("resize", drawB);
+    }
+  })();
+
+  /* ---------- Update-Fortschritt (Darstellung) ---------- */
+  (function () {
+    var bar = document.getElementById("uBar"), pct = document.getElementById("uPct"), st = document.getElementById("uStatus");
+    if (!bar) return;
+    var done = false;
+    function finish() {
+      bar.style.transform = "scaleX(1)"; pct.textContent = "100%"; st.classList.add("done");
+      st.querySelector('[data-l="de"]').textContent = "Installiert, starte neu …";
+      st.querySelector('[data-l="en"]').textContent = "Installed, restarting …";
+    }
+    if (reduce) { finish(); return; }
+    whenVisible(bar.parentNode, function (v) {
+      if (!v) { if (done) { done = false; st.classList.remove("done"); bar.style.transform = "scaleX(0)"; pct.textContent = "0%"; st.querySelector('[data-l="de"]').textContent = "Lade herunter …"; st.querySelector('[data-l="en"]').textContent = "Downloading …"; } return; }
+      if (done) return; done = true;
+      var t0 = null;
+      function f(ts) {
+        if (!done) return;
+        if (!t0) t0 = ts;
+        var k = Math.min(1, (ts - t0) / 2600), e = 1 - Math.pow(1 - k, 2.2);
+        bar.style.transform = "scaleX(" + e + ")"; pct.textContent = Math.round(e * 100) + "%";
+        if (k < 1) requestAnimationFrame(f); else finish();
+      }
+      requestAnimationFrame(f);
+    });
+  })();
+
+  /* ---------- Neueste Version von GitHub (falls erreichbar) ---------- */
+  (function () {
+    if (!window.fetch) return;
+    fetch("https://api.github.com/repos/muzikadritri/RetracBoost/releases/latest", { headers: { Accept: "application/vnd.github+json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !j.tag_name || !/^v?\d+\.\d+\.\d+$/.test(j.tag_name)) return;
+        var v = j.tag_name.charAt(0) === "v" ? j.tag_name : "v" + j.tag_name;
+        document.querySelectorAll(".js-version").forEach(function (el) { el.textContent = v; });
+      })
+      .catch(function () {});
+  })();
+
+  /* ---------- Einblenden beim Scrollen ---------- */
+  (function () {
+    if (reduce || !("IntersectionObserver" in window)) return;
+    var els = [];
+    document.querySelectorAll(".reveal, .reveal-2, .reveal-3, .wipe, .foot-mark").forEach(function (el) {
+      el.classList.add("rv");
+      if (el.classList.contains("reveal-2")) el.style.transitionDelay = "90ms";
+      if (el.classList.contains("reveal-3")) el.style.transitionDelay = "180ms";
+      els.push(el);
+    });
+    document.querySelectorAll(".tweaks, .versions, .steps, .tool-list, .faq-list, .region-list, .chips, .levels, .altl-facts").forEach(function (list) {
+      Array.prototype.forEach.call(list.children, function (el, i) { el.classList.add("rv"); el.style.transitionDelay = Math.min(i, 8) * 70 + "ms"; els.push(el); });
+    });
+    var vh = innerHeight;
+    els.forEach(function (el) { if (el.getBoundingClientRect().top > vh * 0.92) el.classList.add("pre"); });
+    root.classList.add("io");
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.remove("pre"); io.unobserve(e.target); } });
+    }, { rootMargin: "0px 0px -8% 0px" });
+    els.forEach(function (el) { if (el.classList.contains("pre")) io.observe(el); });
+  })();
+
+  setLang(initial);
+})();
+</script>
+
+<script>
+/* Motion-Schicht: Springs (Apple: Dämpfung + Response), Figma-Shader „Glowing wave“ als WebGL, Details */
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  var EASE = "cubic-bezier(0.23, 1, 0.32, 1)";
+
+  /* ---------- Spring: response in s, dampingRatio 1 = keine Überschwinger ---------- */
+  function spring(onUpdate, response, ratio, start) {
+    var k = Math.pow(2 * Math.PI / response, 2), c = 4 * Math.PI * ratio / response;
+    var s = { x: start || 0, v: 0, t: start || 0, run: false }, last = 0;
+    function tick(ts) {
+      var dt = Math.min(0.034, (ts - last) / 1000 || 0.016); last = ts;
+      var n = Math.ceil(dt / 0.004), h = dt / n;
+      for (var i = 0; i < n; i++) { var a = -k * (s.x - s.t) - c * s.v; s.v += a * h; s.x += s.v * h; }
+      if (Math.abs(s.v) < 0.002 && Math.abs(s.x - s.t) < 0.002) { s.x = s.t; s.v = 0; s.run = false; onUpdate(s.x); return; }
+      onUpdate(s.x); requestAnimationFrame(tick);
+    }
+    return {
+      to: function (t) { s.t = t; if (!s.run) { s.run = true; last = performance.now(); requestAnimationFrame(tick); } },
+      get value() { return s.x; }
+    };
+  }
+
+  /* ---------- Hero: Figma-Shader „Glowing wave“, nach WebGL portiert, als Ping-Wellen ---------- */
+  (function () {
+    var c = document.getElementById("heroWaves");
+    if (!c || reduce) return;
+    var gl = c.getContext("webgl", { premultipliedAlpha: true, antialias: false, alpha: true });
+    if (!gl) return;
+    var vs = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+    var fs = [
+      "precision highp float;",
+      "uniform vec2 u_res;uniform float u_time;uniform vec2 u_mouse;uniform float u_energy;uniform float u_dpr;",
+      // Abstand zur Welle wie im Figma-Shader: Kern + weicher Schein mit pow(...,0.4)
+      "float band(float d,float hw,float spread,float gi){",
+      "  float core=1.-smoothstep(hw,hw+1.,d);",
+      "  float glow=1.-pow(clamp(d/spread,0.,1.),0.4);",
+      "  return clamp(core+glow*gi,0.,1.);}",
+      "void main(){",
+      "  vec2 px=gl_FragCoord.xy/u_dpr; vec2 res=u_res/u_dpr;",
+      "  float acc=0.;",
+      "  for(int i=0;i<4;i++){",
+      "    float fi=float(i);",
+      "    float wl=res.x*(0.62+0.21*fi);",
+      "    float k=6.2831853/wl;",
+      "    float near=exp(-pow((px.x-u_mouse.x)/(res.x*0.16),2.));",
+      "    float amp=res.y*(0.06+0.025*fi)*(1.+u_energy*1.1*near);",
+      "    float ph=fi*1.7+u_time*(0.32+0.11*fi)*(mod(fi,2.)<.5?1.:-1.);",
+      "    float y=res.y*(0.36+(fi-1.5)*0.075)+amp*sin(k*px.x+ph)+amp*0.3*sin(k*2.7*px.x-ph*1.3);",
+      // Ping-Spitzen laufen entlang der vordersten Welle
+      "    float sp=fract(px.x/res.x*1.4-u_time*0.07+fi*0.31);",
+      "    y+=res.y*0.12*exp(-pow((sp-0.5)*38.,2.))*(i==0?1.:0.35);",
+      "    float d=abs(px.y-y);",
+      "    float w=i==0?1.:0.42-0.08*fi;",
+      "    acc=max(acc,band(d,i==0?1.2:0.8,46.+fi*10.,0.16)*w);",
+      "  }",
+      "  vec3 col=vec3(0.,0.961,0.627);",
+      "  gl_FragColor=vec4(col*acc,acc);",
+      "}"
+    ].join("\n");
+    function sh(t, src) { var o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); return gl.getShaderParameter(o, gl.COMPILE_STATUS) ? o : null; }
+    var v = sh(gl.VERTEX_SHADER, vs), f = sh(gl.FRAGMENT_SHADER, fs);
+    if (!v || !f) return;
+    var pr = gl.createProgram(); gl.attachShader(pr, v); gl.attachShader(pr, f); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+    gl.useProgram(pr);
+    var b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    var loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    var U = { res: gl.getUniformLocation(pr, "u_res"), time: gl.getUniformLocation(pr, "u_time"), mouse: gl.getUniformLocation(pr, "u_mouse"), energy: gl.getUniformLocation(pr, "u_energy"), dpr: gl.getUniformLocation(pr, "u_dpr") };
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.5), W = 0, H = 0;
+    function size() { var r = c.getBoundingClientRect(); W = Math.max(1, Math.round(r.width * dpr)); H = Math.max(1, Math.round(r.height * dpr)); c.width = W; c.height = H; gl.viewport(0, 0, W, H); }
+    size(); window.addEventListener("resize", size);
+    var mx = spring(function () {}, 0.6, 1, 0.5), en = spring(function () {}, 0.5, 1, 0);
+    var hero = c.parentNode;
+    hero.addEventListener("pointermove", function (e) { var r = c.getBoundingClientRect(); mx.to((e.clientX - r.left) / r.width); en.to(1); });
+    hero.addEventListener("pointerleave", function () { en.to(0); });
+    var vis = true, t0 = performance.now(), running = false;
+    function frame(ts) {
+      if (!vis || document.hidden) { running = false; return; }
+      gl.uniform2f(U.res, W, H); gl.uniform1f(U.time, (ts - t0) / 1000); gl.uniform1f(U.dpr, dpr);
+      gl.uniform2f(U.mouse, mx.value * W / dpr, 0); gl.uniform1f(U.energy, en.value);
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 6);
+      requestAnimationFrame(frame);
+    }
+    function go() { if (!running && vis && !document.hidden) { running = true; requestAnimationFrame(frame); } }
+    new IntersectionObserver(function (es) { vis = es[0].isIntersecting; go(); }).observe(c);
+    document.addEventListener("visibilitychange", go);
+    requestAnimationFrame(function () { c.classList.add("on"); go(); });
+  })();
+
+  /* ---------- Buchstaben-Splitter + „Dock“-Anhebung unter dem Zeiger ---------- */
+  function splitChars(el) {
+    var out = [];
+    (function walk(node) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (n) {
+        if (n.nodeType === 3) {
+          var frag = document.createDocumentFragment();
+          n.textContent.split("").forEach(function (ch) {
+            if (ch === " ") { frag.appendChild(document.createTextNode(" ")); return; }
+            var sp = document.createElement("span"); sp.className = el.id === "footMark" ? "fl" : "ch"; sp.textContent = ch; frag.appendChild(sp); out.push(sp);
+          });
+          n.parentNode.replaceChild(frag, n);
+        } else if (n.nodeType === 1) walk(n);
+      });
+    })(el);
+    return out;
+  }
+  function dock(container, letters, lift, radius) {
+    if (reduce || !finePointer) return;
+    var sp = letters.map(function (l) { return spring(function (v) { l.style.transform = "translateY(" + v.toFixed(2) + "px)"; }, 0.42, 0.72, 0); });
+    container.addEventListener("pointermove", function (e) {
+      letters.forEach(function (l, i) {
+        var r = l.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+        var d = Math.sqrt(dx * dx + dy * dy * 0.4);
+        sp[i].to(-lift * Math.exp(-Math.pow(d / radius, 2)));
+      });
+    });
+    container.addEventListener("pointerleave", function () { sp.forEach(function (s) { s.to(0); }); });
+  }
+
+  /* Hero-Titel */
+  (function () {
+    var h1 = document.getElementById("hero-title");
+    if (!h1) return;
+    var chars = splitChars(h1);
+    if (!reduce) {
+      chars.forEach(function (ch, i) {
+        ch.animate([
+          { transform: "translateY(105%) rotate(6deg)", opacity: 0, filter: "blur(10px)" },
+          { transform: "none", opacity: 1, filter: "blur(0)" }
+        ], { duration: 1000, delay: 80 + i * 45, easing: EASE, fill: "backwards" });
+      });
+      var pv = document.getElementById("pingValue"), target = +pv.textContent || 27, t0 = null;
+      (function count(ts) {
+        if (!t0) t0 = ts; var k = Math.min(1, (ts - t0 - 300) / 900);
+        if (k > 0) pv.textContent = Math.round(target * (1 - Math.pow(1 - k, 3)));
+        if (k < 1) requestAnimationFrame(count);
+      })(performance.now());
+    }
+    setTimeout(function () { dock(h1, chars, 14, 90); }, 900);
+  })();
+
+  /* Footer-Wortmarke */
+  (function () {
+    var fm = document.getElementById("footMark");
+    if (!fm) return;
+    var letters = splitChars(fm);
+    dock(fm, letters, 26, 140);
+  })();
+
+  /* ---------- Wort-Reveal für alle h2 ---------- */
+  (function () {
+    document.querySelectorAll("h2:not(.wipe)").forEach(function (h) {
+      h.querySelectorAll("[data-l]").forEach(function (lang) {
+        var i = 0;
+        (function walk(node) {
+          Array.prototype.slice.call(node.childNodes).forEach(function (n) {
+            if (n.nodeType === 3) {
+              var frag = document.createDocumentFragment();
+              n.textContent.split(/(\s+)/).forEach(function (part) {
+                if (!part) return;
+                if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+                var w = document.createElement("span"); w.className = "sw";
+                var inner = document.createElement("i"); inner.textContent = part; inner.style.setProperty("--i", i++);
+                w.appendChild(inner); frag.appendChild(w);
+              });
+              n.parentNode.replaceChild(frag, n);
+            } else if (n.nodeType === 1) walk(n);
+          });
+        })(lang);
+      });
+      h.classList.add("split");
+    });
+  })();
+
+  /* ---------- Magnet-Buttons ---------- */
+  if (finePointer && !reduce) {
+    document.querySelectorAll(".mag").forEach(function (el) {
+      var x = spring(function () { apply(); }, 0.35, 0.65, 0), y = spring(function () { apply(); }, 0.35, 0.65, 0);
+      function apply() { el.style.transform = "translate(" + x.value.toFixed(2) + "px," + y.value.toFixed(2) + "px)"; }
+      el.addEventListener("pointermove", function (e) {
+        var r = el.getBoundingClientRect();
+        x.to(Math.max(-8, Math.min(8, (e.clientX - r.left - r.width / 2) * 0.22)));
+        y.to(Math.max(-6, Math.min(6, (e.clientY - r.top - r.height / 2) * 0.3)));
+      });
+      el.addEventListener("pointerleave", function () { x.to(0); y.to(0); });
+    });
+  }
+
+  /* ---------- 3D-Neigung des Hero-Panels ---------- */
+  (function () {
+    var card = document.getElementById("tiltCard"), zone = document.getElementById("heroPanel");
+    if (!card || !zone || reduce || !finePointer) return;
+    var rx = spring(apply, 0.5, 0.8, 0), ry = spring(apply, 0.5, 0.8, 0);
+    function apply() { card.style.transform = "rotateX(" + rx.value.toFixed(3) + "deg) rotateY(" + ry.value.toFixed(3) + "deg)"; }
+    zone.addEventListener("pointermove", function (e) {
+      var r = card.getBoundingClientRect(), px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+      ry.to((px - 0.5) * 9); rx.to((0.5 - py) * 7);
+      card.style.setProperty("--sx", (px * 100).toFixed(1) + "%"); card.style.setProperty("--sy", (py * 100).toFixed(1) + "%");
+    });
+    zone.addEventListener("pointerleave", function () { rx.to(0); ry.to(0); });
+  })();
+
+  /* ---------- Spotlight ---------- */
+  if (finePointer) {
+    document.addEventListener("pointermove", function (e) {
+      var el = e.target.closest && e.target.closest(".spot");
+      if (!el) return;
+      var r = el.getBoundingClientRect();
+      el.style.setProperty("--mx", (e.clientX - r.left) + "px"); el.style.setProperty("--my", (e.clientY - r.top) + "px");
+    }, { passive: true });
+  }
+
+  /* ---------- Nav: ein-/ausblenden, aktiver Abschnitt, Fortschritt ---------- */
+  (function () {
+    var nav = document.querySelector(".nav"), bar = document.getElementById("scrollBar"), toTop = document.getElementById("toTop");
+    var ul = document.getElementById("navLinks"), ind = ul && ul.querySelector(".nav-ind");
+    var links = ul ? Array.prototype.slice.call(ul.querySelectorAll("a")) : [];
+    var lastY = scrollY, ticking = false;
+    function onScroll() {
+      var y = scrollY, max = document.documentElement.scrollHeight - innerHeight;
+      bar.style.transform = "scaleX(" + (max > 0 ? Math.min(1, y / max) : 0).toFixed(4) + ")";
+      if (!reduce) {
+        if (y > 320 && y > lastY + 6) nav.classList.add("hide");
+        else if (y < lastY - 6 || y < 320) nav.classList.remove("hide");
+      }
+      toTop.classList.toggle("show", y > 1200);
+      lastY = y; ticking = false;
+    }
+    addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+    onScroll();
+    function moveInd(a) {
+      if (!ind) return;
+      if (!a) { ind.style.opacity = "0"; return; }
+      var r = a.getBoundingClientRect(), ur = ul.getBoundingClientRect();
+      ind.style.opacity = "1";
+      ind.style.transform = "translateX(" + (r.left - ur.left) + "px) scaleX(" + r.width + ")";
+    }
+    var current = null;
+    var map = {};
+    links.forEach(function (a) { var id = a.getAttribute("href").slice(1); var sec = document.getElementById(id); if (sec) map[id] = a; });
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { current = map[e.target.id] || null; } });
+      links.forEach(function (a) { a.classList.toggle("active", a === current); });
+      moveInd(current);
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    Object.keys(map).forEach(function (id) { io.observe(document.getElementById(id)); });
+    addEventListener("resize", function () { moveInd(current); });
+  })();
+
+  /* ---------- Ticker: Grundtempo + Scroll-Geschwindigkeit ---------- */
+  (function () {
+    var track = document.getElementById("tickerTrack");
+    if (!track || reduce) return;
+    var x = 0, boost = spring(function () {}, 0.6, 1, 0), lastY = scrollY, last = 0, vis = true;
+    addEventListener("scroll", function () { var d = scrollY - lastY; lastY = scrollY; boost.to(Math.max(-6, Math.min(6, d * 0.35))); clearTimeout(track._t); track._t = setTimeout(function () { boost.to(0); }, 120); }, { passive: true });
+    new IntersectionObserver(function (es) { vis = es[0].isIntersecting; if (vis) requestAnimationFrame(f); }).observe(track);
+    function f(ts) {
+      if (!vis) return;
+      var dt = last ? Math.min(50, ts - last) : 16; last = ts;
+      var half = track.scrollWidth / 2;
+      x -= (0.055 * dt) * (1 + Math.abs(boost.value)) * (boost.value < -0.5 ? -1 : 1);
+      if (x <= -half) x += half; if (x > 0) x -= half;
+      track.style.transform = "translate3d(" + x.toFixed(2) + "px,0,0)";
+      requestAnimationFrame(f);
+    }
+  })();
+
+  /* ---------- Entschlüsseln-Effekt für technische Werte ---------- */
+  (function () {
+    var els = document.querySelectorAll("[data-scramble]");
+    if (reduce || !els.length) return;
+    var glyphs = "0123456789abcdef:.-/\\";
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return; io.unobserve(e.target);
+        var el = e.target, final = el.textContent, t0 = null;
+        (function f(ts) {
+          if (!t0) t0 = ts; var k = Math.min(1, (ts - t0) / 900), n = Math.floor(final.length * k);
+          var out = final.slice(0, n);
+          for (var i = n; i < final.length; i++) out += final[i] === " " ? " " : glyphs[(Math.random() * glyphs.length) | 0];
+          el.textContent = out;
+          if (k < 1) requestAnimationFrame(f); else el.textContent = final;
+        })(performance.now());
+      });
+    }, { rootMargin: "0px 0px -10% 0px" });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+
+  /* ---------- Grüne Fläche öffnet sich beim Scrollen ---------- */
+  (function () {
+    var field = document.querySelector(".field");
+    if (!field || reduce || !("clipPath" in document.body.style)) return;
+    var ticking = false;
+    function up() {
+      var r = field.getBoundingClientRect(), vh = innerHeight;
+      var p = Math.max(0, Math.min(1, (vh - r.top) / (vh * 0.7)));
+      var e = 1 - Math.pow(1 - p, 3);
+      field.style.clipPath = "inset(" + ((1 - e) * 7).toFixed(2) + "% " + ((1 - e) * 5).toFixed(2) + "% round " + ((1 - e) * 40).toFixed(1) + "px)";
+      ticking = false;
+    }
+    addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(up); } }, { passive: true });
+    up();
+  })();
+
+  /* ---------- FAQ: weiches Auf- und Zuklappen ---------- */
+  (function () {
+    document.querySelectorAll(".faq-list details").forEach(function (d) {
+      var sum = d.querySelector("summary"), body = d.querySelector(".a"), anim = null;
+      sum.addEventListener("click", function (e) {
+        if (reduce) return;
+        e.preventDefault();
+        if (anim) anim.cancel();
+        if (!d.open) {
+          d.open = true;
+          var h = body.scrollHeight;
+          anim = body.animate([{ height: "0px", opacity: 0 }, { height: h + "px", opacity: 1 }], { duration: 300, easing: "cubic-bezier(0.32, 0.72, 0, 1)" });
+          anim.onfinish = function () { anim = null; };
+        } else {
+          var h2 = body.offsetHeight;
+          anim = body.animate([{ height: h2 + "px", opacity: 1 }, { height: "0px", opacity: 0 }], { duration: 220, easing: EASE });
+          anim.onfinish = function () { d.open = false; anim = null; };
+        }
+      });
+    });
+  })();
+
+  /* ---------- Code kopieren ---------- */
+  (function () {
+    var btn = document.getElementById("copyBtn"), code = document.getElementById("codeText");
+    if (!btn || !code) return;
+    btn.addEventListener("click", function () {
+      var text = code.innerText;
+      function ok() { btn.classList.add("done"); clearTimeout(btn._t); btn._t = setTimeout(function () { btn.classList.remove("done"); }, 1600); }
+      function fallback() { var r = document.createRange(); r.selectNodeContents(code); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+      try { navigator.clipboard.writeText(text).then(ok, fallback); } catch (e) { fallback(); }
+    });
+  })();
+
+  /* ---------- Sprachwechsel: weiche Überblendung ---------- */
+  document.querySelectorAll("[data-set-lang]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (reduce) return;
+      document.querySelectorAll("main, footer").forEach(function (el) {
+        el.animate([{ opacity: 0.35, filter: "blur(3px)" }, { opacity: 1, filter: "blur(0)" }], { duration: 300, easing: EASE });
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
