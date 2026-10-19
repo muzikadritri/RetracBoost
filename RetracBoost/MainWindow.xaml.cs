@@ -121,8 +121,8 @@ namespace RetracBoost
         readonly TimerTweak timerTweak = new TimerTweak();
         readonly AutoStartTweak autoStart = new AutoStartTweak();
         readonly MtuTweak mtu = new MtuTweak();
-        readonly SettingTweak overlayTweak, autoBoostTweak;
-        readonly Row rowTcp, rowBg, rowTimer, rowAutoStart, rowOverlay, rowAutoBoost;
+        readonly SettingTweak overlayTweak, autoBoostTweak, gameMenuTweak;
+        readonly Row rowTcp, rowBg, rowTimer, rowAutoStart, rowOverlay, rowAutoBoost, rowGameMenu;
 
         // Seite 3: Retrac
         readonly GameTweak ogfn = new GameTweak("ogfn", "RetracBoost-OGFN", L.T("Netzwerk- und CPU-Priorität", "Network and CPU priority")) { Exe = OgfnExe };
@@ -135,6 +135,7 @@ namespace RetracBoost
         readonly Row rowOgfn, rowServerLock, rowPotato, rowFso, rowDvr, rowMouse, rowEngine;
 
         OverlayWindow overlay;
+        GameMenuWindow gameMenu;
         string host;
         bool sequence;
         Stats baseline;
@@ -149,7 +150,7 @@ namespace RetracBoost
                 HeaderVersionBadge.Text = "v" + AutoUpdater.CurrentVersion;
             LocalizeUpdater();
 
-            SourceInitialized += (s, e) => ApplyTitleBar();
+            SourceInitialized += (s, e) => { ApplyTitleBar(); InitGameMenu(); };
             Closing += (s, e) => pinger.Stop();
 
             LabelAvg.Text = L.T("Durchschnitt", "Average");
@@ -184,13 +185,18 @@ namespace RetracBoost
                 L.T("Aktiviert den Boost automatisch, sobald dein Spiel startet (ohne Netzwerkkarten-Neustart)",
                     "Turns the boost on automatically when your game starts (no adapter restart)"),
                 null);
+            gameMenuTweak = new SettingTweak("gamemenu", L.T("Ingame-Menü (Alt+L)", "In-game menu (Alt+L)"),
+                L.T("Alt+L zeigt über dem Spiel Gamma, Helligkeit, Kontrast und Farbton",
+                    "Alt+L shows gamma, brightness, contrast and color tone over the game"),
+                on => Dispatcher.Invoke(new Action(() => SetGameMenuHotkey(on))), true);
             rowTcp = new Row(tcp, elevated);
             rowBg = new Row(background, elevated);
             rowTimer = new Row(timerTweak, elevated);
             rowAutoStart = new Row(autoStart, elevated);
             rowOverlay = new Row(overlayTweak, () => true);
             rowAutoBoost = new Row(autoBoostTweak, () => true);
-            SysListLeft.ItemsSource = new[] { rowTcp, rowBg, rowTimer };
+            rowGameMenu = new Row(gameMenuTweak, () => true);
+            SysListLeft.ItemsSource = new[] { rowTcp, rowBg, rowTimer, rowGameMenu };
             SysListRight.ItemsSource = new[] { rowAutoStart, rowOverlay, rowAutoBoost };
 
             // Retrac
@@ -216,7 +222,7 @@ namespace RetracBoost
             RetracRowList.ItemsSource = new[] { rowNet, rowAdapter, rowPower, rowFps, rowOgfn, rowServerLock, rowPotato, rowFso, rowDvr, rowMouse, rowEngine };
 
             foreach (var r in new[] { rowNet, rowAdapter, rowPower, rowFps, rowGame, rowDns, rowTcp, rowBg, rowTimer, rowAutoStart,
-                                      rowOverlay, rowAutoBoost, rowOgfn, rowServerLock, rowPotato, rowFso, rowDvr, rowMouse, rowEngine })
+                                      rowOverlay, rowAutoBoost, rowGameMenu, rowOgfn, rowServerLock, rowPotato, rowFso, rowDvr, rowMouse, rowEngine })
             {
                 r.Busy = true;
                 r.Detail = L.T("Prüfe …", "Checking …");
@@ -269,7 +275,11 @@ namespace RetracBoost
                 await Task.Delay(2500);
                 TrimWorkingSet();
             };
-            Closing += (s, e) => { if (overlay != null) overlay.Close(); };
+            Closing += (s, e) =>
+            {
+                if (overlay != null) overlay.Close();
+                CloseGameMenu();
+            };
 
             if (Environment.GetCommandLineArgs().Any(a => a == "--minimized")) WindowState = WindowState.Minimized;
         }
@@ -525,7 +535,7 @@ namespace RetracBoost
         Row[] AllRows()
         {
             return new[] { rowNet, rowAdapter, rowPower, rowFps, rowGame, rowDns, rowTcp, rowBg, rowTimer, rowAutoStart,
-                           rowOverlay, rowAutoBoost, rowOgfn, rowServerLock, rowPotato, rowFso, rowDvr, rowMouse, rowEngine };
+                           rowOverlay, rowAutoBoost, rowGameMenu, rowOgfn, rowServerLock, rowPotato, rowFso, rowDvr, rowMouse, rowEngine };
         }
 
         async Task InitAsync()
@@ -549,6 +559,7 @@ namespace RetracBoost
 
                 if (rowTimer.IsOn) TimerHold.Enable();          // Systemuhr-Auflösung gilt nur, solange diese App läuft
                 if (rowOverlay.IsOn) SetOverlay(true);
+                SetGameMenuHotkey(rowGameMenu.IsOn);
             }
             finally { gate.Release(); }
             UpdateMaster();
@@ -616,7 +627,7 @@ namespace RetracBoost
             var window = samples.Skip(Math.Max(0, samples.Count - 60)).ToList();
             var st = Stats.From(window);
 
-            if (overlay != null) UpdateOverlay(s, st);
+            if (overlay != null || gameMenu != null) UpdateOverlay(s, st);
 
             // Wenn das Fenster minimiert ist, keine WPF-Zeichenarbeit durchführen (0% CPU)
             if (WindowState == WindowState.Minimized) return;

@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 
 namespace RetracBoost
@@ -78,6 +80,8 @@ namespace RetracBoost
 
         void UpdateOverlay(PingSample s, Stats st)
         {
+            if (gameMenu != null && gameMenu.IsVisible)
+                gameMenu.SetPing(s.Ms.HasValue ? "Ping " + (s.Ms.Value < 1 ? "<1" : s.Ms.Value.ToString("0", CultureInfo.CurrentCulture)) + " ms" : "Ping – ms");
             if (overlay == null || !overlay.IsVisible) return;
             string detail = st.Replies > 0
                 ? "Jitter " + st.Jitter.ToString("0.0", CultureInfo.CurrentCulture) + " · " + st.Loss.ToString("0", CultureInfo.CurrentCulture) + " %"
@@ -85,6 +89,73 @@ namespace RetracBoost
             double v = s.Ms ?? double.NaN;
             Brush dot = !s.Ms.HasValue ? BadBrush : v <= 100 ? Res("Accent") : v <= 150 ? Res("Warn") : BadBrush;
             overlay.Update(s.Ms, detail, dot);
+        }
+
+        // ------------------------------------------------------------------ Ingame-Menü (Alt+L)
+
+        [DllImport("user32.dll")] static extern bool RegisterHotKey(IntPtr hwnd, int id, uint modifiers, uint vk);
+        [DllImport("user32.dll")] static extern bool UnregisterHotKey(IntPtr hwnd, int id);
+
+        const int WM_HOTKEY = 0x0312, GameMenuHotkeyId = 0x524C;
+        const uint MOD_ALT = 0x1, MOD_NOREPEAT = 0x4000, VK_L = 0x4C;
+        bool hotkeyRegistered;
+
+        void InitGameMenu()
+        {
+            GammaRamp.RecoverAfterCrash();
+            var src = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
+            if (src != null) src.AddHook(GameMenuHook);
+        }
+
+        IntPtr GameMenuHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (msg == WM_HOTKEY && wParam.ToInt32() == GameMenuHotkeyId)
+            {
+                handled = true;
+                if (gameMenu != null) gameMenu.Toggle();
+            }
+            return IntPtr.Zero;
+        }
+
+        GameMenuWindow EnsureGameMenu()
+        {
+            if (gameMenu == null)
+                gameMenu = new GameMenuWindow((Style)FindResource("Switch"), () => rowOverlay.IsOn, on =>
+                {
+                    if (rowOverlay.IsOn != on && rowOverlay.CanToggle) rowOverlay.IsOn = on;
+                });
+            return gameMenu;
+        }
+
+        /// <summary>Registriert Alt+L systemweit. Kein Hook ins Spiel, nur ein normales Windows-Tastenkürzel.</summary>
+        void SetGameMenuHotkey(bool on)
+        {
+            var h = new WindowInteropHelper(this).Handle;
+            if (on)
+            {
+                EnsureGameMenu().ApplySaved();
+                if (!hotkeyRegistered && h != IntPtr.Zero)
+                    hotkeyRegistered = RegisterHotKey(h, GameMenuHotkeyId, MOD_ALT | MOD_NOREPEAT, VK_L);
+                gameMenuTweak.Note = hotkeyRegistered ? null
+                    : L.T("Alt+L ist schon von einem anderen Programm belegt", "Alt+L is already used by another program");
+            }
+            else
+            {
+                if (hotkeyRegistered) UnregisterHotKey(h, GameMenuHotkeyId);
+                hotkeyRegistered = false;
+                gameMenuTweak.Note = null;
+                if (gameMenu != null) gameMenu.Hide();
+                GammaRamp.Restore();
+            }
+            rowGameMenu.Detail = gameMenuTweak.Detail;
+        }
+
+        void CloseGameMenu()
+        {
+            if (hotkeyRegistered) UnregisterHotKey(new WindowInteropHelper(this).Handle, GameMenuHotkeyId);
+            hotkeyRegistered = false;
+            if (gameMenu != null) gameMenu.Close();
+            GammaRamp.Restore();
         }
 
         // ------------------------------------------------------------------ Klick auf Ergebniszeile
