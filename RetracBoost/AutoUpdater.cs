@@ -22,7 +22,7 @@ namespace RetracBoost
 
     public static class AutoUpdater
     {
-        public const string CurrentVersion = "1.0.3";
+        public const string CurrentVersion = "1.0.4";
 
         public const string DefaultGitHubRepo = "muzikadritri/RetracBoost";
         const string LocalManifestPath = @"C:\Retrac tools\update_manifest.json";

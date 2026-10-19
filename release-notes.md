@@ -1,8 +1,14 @@
-Updates
-- Nach dem Download blieb die alte Version drauf. Die neue Datei wurde kopiert, während das Programm noch lief, und das ging schief. Jetzt wird die laufende Datei zur Seite geschoben und die neue an ihren Platz gelegt. Behoben.
-- War GitHub nicht erreichbar, stand trotzdem "Kein Update nötig" da. Jetzt steht da, dass die Suche nicht geklappt hat.
-- Lädt der Knopf eine Datei, die nicht neuer ist als die installierte, bricht er mit einer klaren Meldung ab, statt sich neu zu starten.
-- Das Update-Fenster gibt es jetzt auch auf Englisch.
+Neu: Ingame-Menü mit Alt+L
+- Alt+L öffnet über dem Spiel ein kleines Menü. Darin lassen sich Gamma, Helligkeit, Kontrast und Farbton (wärmer oder kühler) einstellen, und die Ping-Anzeige lässt sich ein- und ausschalten.
+- Alt+L oder Esc schließt das Menü wieder, danach ist das Spiel wieder im Vordergrund.
+- Das Menü ist ein eigenes Fenster. Im Spiel selbst wird nichts verändert.
+- Es funktioniert im Fenster- und im randlosen Modus, nicht im exklusiven Vollbild.
+- Die Bildwerte gelten für den ganzen Bildschirm. Beim Beenden von Retrac Boost wird alles zurückgesetzt.
+- Ein- und ausschalten unter Werkzeuge → „Ingame-Menü (Alt+L)“.
+
+New: in-game menu with Alt+L
+- Alt+L opens a small menu over the game with gamma, brightness, contrast and color tone, plus a switch for the ping display.
+- Works in windowed and borderless mode, not in exclusive fullscreen. Values are reset when Retrac Boost closes.
 
 Wichtig für v1.0.1 und v1.0.2
-- In diesen Versionen steckt noch der alte Fehler. Einmal RetracBoost-Setup.exe von dieser Seite installieren, danach klappt der Update-Knopf.
+- In diesen Versionen funktioniert der Update-Knopf noch nicht. Einmal RetracBoost-Setup.exe von dieser Seite installieren, danach klappt er.

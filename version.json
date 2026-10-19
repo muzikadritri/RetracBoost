@@ -1,5 +1,5 @@
 {
-  "version": "1.0.3",
-  "url": "https://github.com/muzikadritri/RetracBoost/releases/download/v1.0.3/RetracBoost.exe",
-  "changelog": "Update-Knopf: neue Version wird jetzt wirklich installiert\nOhne Internet steht nicht mehr \"Kein Update nötig\"\nUpdate-Fenster auch auf Englisch"
+  "version": "1.0.4",
+  "url": "https://github.com/muzikadritri/RetracBoost/releases/download/v1.0.4/RetracBoost.exe",
+  "changelog": "Neu: Ingame-Menü mit Alt+L\nGamma, Helligkeit, Kontrast und Farbton direkt im Spiel einstellen\nPing-Anzeige im Menü ein- und ausschalten"
 }
