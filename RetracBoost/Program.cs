@@ -70,12 +70,21 @@ namespace RetracBoost
             bool created;
             using (var mutex = new Mutex(true, "RetracBoost.SingleInstance", out created))
             {
+                // Nach einem Update läuft die alte Version noch kurz - auf sie warten statt abzubrechen
+                if (!created && args.Contains(AutoUpdater.UpdatedArg))
+                {
+                    try { created = mutex.WaitOne(TimeSpan.FromSeconds(15)); }
+                    catch (AbandonedMutexException) { created = true; }
+                }
+
                 if (!created)
                 {
                     var h = FindWindow(null, "Retrac Boost");
                     if (h != IntPtr.Zero) { ShowWindow(h, 9); SetForegroundWindow(h); }
                     return 0;
                 }
+
+                AutoUpdater.CleanupAfterUpdate();
 
                 var app = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
                 app.DispatcherUnhandledException += (s, e) =>

@@ -1,5 +1,5 @@
 {
-  "version": "1.0.2",
-  "url": "https://github.com/muzikadritri/RetracBoost/releases/download/v1.0.2/RetracBoost.exe",
-  "changelog": "Server-Lock: nur noch Frankfurt, auch Zürich und IPv6 gesperrt\nPing: UDP-Bündelung aus, mehr Netzwerkkarten-Einstellungen\nFPS: Spiel auf der Grafikkarte, Multithreaded Rendering, RAM-Wächter\nPotato: Werte bleiben gesetzt, Nebel aus\nUpdate-Knopf wieder lesbar"
+  "version": "1.0.3",
+  "url": "https://github.com/muzikadritri/RetracBoost/releases/download/v1.0.3/RetracBoost.exe",
+  "changelog": "Update-Knopf: neue Version wird jetzt wirklich installiert\nOhne Internet steht nicht mehr \"Kein Update nötig\"\nUpdate-Fenster auch auf Englisch"
 }

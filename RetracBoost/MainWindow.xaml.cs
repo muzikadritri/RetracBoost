@@ -147,8 +147,7 @@ namespace RetracBoost
 
             if (HeaderVersionBadge != null)
                 HeaderVersionBadge.Text = "v" + AutoUpdater.CurrentVersion;
-            if (UpdateBadgeText != null)
-                UpdateBadgeText.Text = "Aktuell (v" + AutoUpdater.CurrentVersion + ")";
+            LocalizeUpdater();
 
             SourceInitialized += (s, e) => ApplyTitleBar();
             Closing += (s, e) => pinger.Stop();
@@ -333,6 +332,19 @@ namespace RetracBoost
 
         UpdateInfo latestUpdateInfo;
 
+        void LocalizeUpdater()
+        {
+            UpdateBadgeText.Text = L.T("Aktuell", "Up to date") + " (v" + AutoUpdater.CurrentVersion + ")";
+            UpdateBadgeButton.ToolTip = L.T("Updates und Änderungen", "Updates and changes");
+            ModalSubtitle.Text = L.T("Versionen und Änderungen", "Versions and changes");
+            ModalStatusHeader.Text = L.T("Noch nicht geprüft", "Not checked yet");
+            ModalChangelog.Text = L.T("Klick auf „Nach Updates suchen“.", "Click “Check for updates”.");
+            LabelGitHubRepo.Text = L.T("GitHub Repo:", "GitHub repo:");
+            ModalProgressLabel.Text = L.T("Lade herunter …", "Downloading …");
+            ModalCheckBtn.Content = L.T("Nach Updates suchen", "Check for updates");
+            ModalActionBtn.Content = L.T("Schließen", "Close");
+        }
+
         async Task CheckUpdatesAsync(bool silent)
         {
             try
@@ -347,8 +359,8 @@ namespace RetracBoost
 
                 if (!silent)
                 {
-                    ModalStatusHeader.Text = "Suche nach Updates …";
-                    ModalChangelog.Text = "Frage github.com/" + AutoUpdater.ResolveGitHubRepo() + " ab …";
+                    ModalStatusHeader.Text = L.T("Suche nach Updates …", "Checking for updates …");
+                    ModalChangelog.Text = L.T("Frage github.com/", "Asking github.com/") + AutoUpdater.ResolveGitHubRepo() + " …";
                     ModalCheckBtn.IsEnabled = false;
                 }
 
@@ -358,13 +370,27 @@ namespace RetracBoost
                 if (TxtGitHubRepo != null)
                     TxtGitHubRepo.Text = AutoUpdater.ResolveGitHubRepo();
 
-                if (info.HasUpdate)
+                if (info.CheckFailed)
                 {
-                    UpdateBadgeText.Text = "Update verfügbar (v" + info.LatestVersion + ")";
+                    // Nicht prüfen können heißt nicht "aktuell"
+                    latestUpdateInfo = null;
+                    UpdateBadgeText.Text = "v" + AutoUpdater.CurrentVersion;
+                    UpdateDot.Fill = (Brush)FindResource("Muted");
+                    ModalStatusHeader.Text = L.T("Update-Suche fehlgeschlagen", "Update check failed");
+                    ModalChangelog.Text = info.Changelog;
+                    ModalActionBtn.Content = L.T("Schließen", "Close");
+                    ModalActionBtn.Style = (Style)FindResource("Action");
+                    ModalActionBtn.Click -= StartUpdateInstall_Click;
+                    ModalActionBtn.Click -= UpdateClose_Click;
+                    ModalActionBtn.Click += UpdateClose_Click;
+                }
+                else if (info.HasUpdate)
+                {
+                    UpdateBadgeText.Text = L.T("Update verfügbar", "Update available") + " (v" + info.LatestVersion + ")";
                     UpdateDot.Fill = new SolidColorBrush(Color.FromRgb(0xF2, 0xB8, 0x4B)); // Warn
-                    ModalStatusHeader.Text = "Version " + info.LatestVersion + " ist da";
-                    ModalChangelog.Text = string.IsNullOrEmpty(info.Changelog) ? "Keine Beschreibung." : info.Changelog;
-                    ModalActionBtn.Content = "Auf v" + info.LatestVersion + " aktualisieren";
+                    ModalStatusHeader.Text = string.Format(L.T("Version {0} ist da", "Version {0} is out"), info.LatestVersion);
+                    ModalChangelog.Text = string.IsNullOrEmpty(info.Changelog) ? L.T("Keine Beschreibung.", "No description.") : info.Changelog;
+                    ModalActionBtn.Content = string.Format(L.T("Auf v{0} aktualisieren", "Update to v{0}"), info.LatestVersion);
                     ModalActionBtn.Style = (Style)FindResource("Primary");
                     ModalActionBtn.Click -= UpdateClose_Click;
                     ModalActionBtn.Click -= StartUpdateInstall_Click;
@@ -372,12 +398,12 @@ namespace RetracBoost
                 }
                 else
                 {
-                    UpdateBadgeText.Text = "Aktuell (v" + AutoUpdater.CurrentVersion + ")";
+                    UpdateBadgeText.Text = L.T("Aktuell", "Up to date") + " (v" + AutoUpdater.CurrentVersion + ")";
                     UpdateDot.Fill = new SolidColorBrush(Color.FromRgb(0x3D, 0xDC, 0x97)); // Accent
-                    ModalStatusHeader.Text = "Kein Update nötig";
-                    ModalChangelog.Text = "Installiert: v" + AutoUpdater.CurrentVersion + "\n" +
-                                          "Quelle: github.com/" + AutoUpdater.ResolveGitHubRepo();
-                    ModalActionBtn.Content = "Schließen";
+                    ModalStatusHeader.Text = L.T("Kein Update nötig", "You're up to date");
+                    ModalChangelog.Text = L.T("Installiert: v", "Installed: v") + AutoUpdater.CurrentVersion + "\n" +
+                                          L.T("Quelle: github.com/", "Source: github.com/") + AutoUpdater.ResolveGitHubRepo();
+                    ModalActionBtn.Content = L.T("Schließen", "Close");
                     ModalActionBtn.Style = (Style)FindResource("Action");
                     ModalActionBtn.Click -= StartUpdateInstall_Click;
                     ModalActionBtn.Click -= UpdateClose_Click;
@@ -388,7 +414,7 @@ namespace RetracBoost
             {
                 if (!silent)
                 {
-                    ModalStatusHeader.Text = "Update-Suche fehlgeschlagen";
+                    ModalStatusHeader.Text = L.T("Update-Suche fehlgeschlagen", "Update check failed");
                     ModalChangelog.Text = ex.Message;
                 }
             }
@@ -463,7 +489,7 @@ namespace RetracBoost
                     });
                 });
 
-                ModalStatusHeader.Text = "Starte neu …";
+                ModalStatusHeader.Text = L.T("Starte neu …", "Restarting …");
                 AutoUpdater.ApplyUpdateAndRestart(downloadedFile);
             }
             catch (Exception ex)
@@ -471,7 +497,7 @@ namespace RetracBoost
                 ModalProgressPanel.Visibility = Visibility.Collapsed;
                 ModalActionBtn.IsEnabled = true;
                 ModalCheckBtn.IsEnabled = true;
-                ModalStatusHeader.Text = "Download fehlgeschlagen";
+                ModalStatusHeader.Text = L.T("Update fehlgeschlagen", "Update failed");
                 ModalChangelog.Text = ex.Message;
             }
         }

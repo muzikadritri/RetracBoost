@@ -16,11 +16,13 @@ namespace RetracBoost
         public string Changelog { get; set; }
         public string DownloadUrl { get; set; }
         public string StatusMessage { get; set; }
+        // true, wenn weder GitHub noch eine lokale version.json erreichbar war
+        public bool CheckFailed { get; set; }
     }
 
     public static class AutoUpdater
     {
-        public const string CurrentVersion = "1.0.2";
+        public const string CurrentVersion = "1.0.3";
 
         public const string DefaultGitHubRepo = "muzikadritri/RetracBoost";
         const string LocalManifestPath = @"C:\Retrac tools\update_manifest.json";
@@ -86,8 +88,8 @@ namespace RetracBoost
                 CurrentVersion = CurrentVersion,
                 LatestVersion = CurrentVersion,
                 HasUpdate = false,
-                Changelog = "Kein Update verfügbar.",
-                StatusMessage = "Aktuell"
+                Changelog = L.T("Kein Update verfügbar.", "No update available."),
+                StatusMessage = L.T("Aktuell", "Up to date")
             };
 
             await Task.Run(() =>
@@ -151,11 +153,11 @@ namespace RetracBoost
                             if (IsNewer(remoteVer, CurrentVersion))
                             {
                                 info.HasUpdate = true;
-                                info.StatusMessage = "Update verfügbar: v" + remoteVer;
+                                info.StatusMessage = L.T("Update verfügbar: v", "Update available: v") + remoteVer;
                             }
                             else
                             {
-                                info.StatusMessage = "Auf neuestem Stand (v" + CurrentVersion + ")";
+                                info.StatusMessage = L.T("Auf neuestem Stand (v", "Up to date (v") + CurrentVersion + ")";
                             }
                             return;
                         }
@@ -181,14 +183,19 @@ namespace RetracBoost
                                     string remoteVer = tag.TrimStart('v', 'V');
                                     info.LatestVersion = remoteVer;
                                     info.DownloadUrl = "https://github.com/" + repo + "/releases/latest/download/RetracBoost.exe";
-                                    info.Changelog = "Neue Version: " + tag;
+                                    info.Changelog = L.T("Neue Version: ", "New version: ") + tag;
 
                                     if (IsNewer(remoteVer, CurrentVersion))
                                     {
                                         info.HasUpdate = true;
-                                        info.StatusMessage = "Update verfügbar: v" + remoteVer;
-                                        return;
+                                        info.StatusMessage = L.T("Update verfügbar: v", "Update available: v") + remoteVer;
                                     }
+                                    else
+                                    {
+                                        info.Changelog = L.T("Kein Update verfügbar.", "No update available.");
+                                    }
+                                    // GitHub hat geantwortet - die lokale version.json ist dann nicht mehr gefragt
+                                    return;
                                 }
                             }
                         }
@@ -221,7 +228,7 @@ namespace RetracBoost
                                     if (IsNewer(remoteVer, CurrentVersion))
                                     {
                                         info.HasUpdate = true;
-                                        info.StatusMessage = "Update verfügbar: v" + remoteVer;
+                                        info.StatusMessage = L.T("Update verfügbar: v", "Update available: v") + remoteVer;
                                     }
                                     return;
                                 }
@@ -230,10 +237,15 @@ namespace RetracBoost
                         }
                     }
 
-                    info.StatusMessage = "v" + CurrentVersion + " (Aktuell)";
+                    // Nichts erreicht: nicht so tun, als wäre alles aktuell
+                    info.CheckFailed = true;
+                    info.StatusMessage = "v" + CurrentVersion;
+                    info.Changelog = L.T("GitHub ist gerade nicht erreichbar. Prüf die Internetverbindung und versuch es nochmal.",
+                                         "GitHub can't be reached right now. Check your internet connection and try again.");
                 }
                 catch (Exception ex)
                 {
+                    info.CheckFailed = true;
                     info.StatusMessage = "v" + CurrentVersion;
                     info.Changelog = "GitHub: " + ex.Message;
                 }
@@ -258,12 +270,20 @@ namespace RetracBoost
 
         public static async Task<string> DownloadUpdateAsync(string url, Action<int> progress)
         {
-            if (string.IsNullOrEmpty(url)) throw new ArgumentException("Download-URL fehlt.");
+            if (string.IsNullOrEmpty(url)) throw new ArgumentException(L.T("Download-URL fehlt.", "Download URL is missing."));
 
-            string tempExe = Path.Combine(Path.GetTempPath(), "RetracBoost-Update-" + Guid.NewGuid().ToString("N").Substring(0, 8) + ".exe");
+            // Eigener Ordner, Dateiname wie im Release (z. B. RetracBoost-Setup.exe),
+            // damit ApplyUpdateAndRestart ein Setup am Namen erkennt
+            string fileName = Path.GetFileName(new Uri(url).LocalPath);
+            if (string.IsNullOrEmpty(fileName) || !fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                fileName = "RetracBoost.exe";
+            string tempDir = Path.Combine(Path.GetTempPath(), "RetracBoost-Update-" + Guid.NewGuid().ToString("N").Substring(0, 8));
+            Directory.CreateDirectory(tempDir);
+            string tempExe = Path.Combine(tempDir, fileName);
+
             using (var wc = new WebClient())
             {
-                wc.Headers.Add("User-Agent", "RetracBoost-AutoUpdater");
+                wc.Headers.Add("User-Agent", "RetracBoost-AutoUpdater/" + CurrentVersion);
                 wc.DownloadProgressChanged += (s, e) =>
                 {
                     if (progress != null) progress(e.ProgressPercentage);
@@ -273,10 +293,46 @@ namespace RetracBoost
             }
 
             if (!File.Exists(tempExe) || new FileInfo(tempExe).Length < 10000)
-                throw new InvalidOperationException("Heruntergeladene Update-Datei ist unvollständig.");
+                throw new InvalidOperationException(L.T("Heruntergeladene Update-Datei ist unvollständig.", "The downloaded update file is incomplete."));
+
+            // Nicht dieselbe (oder eine ältere) Version über sich selbst kopieren
+            Version downloaded = ReadFileVersion(tempExe);
+            Version current;
+            if (downloaded != null && Version.TryParse(CurrentVersion, out current) && Normalize(downloaded) <= Normalize(current))
+            {
+                TryDeleteDirectory(tempDir);
+                throw new InvalidOperationException(string.Format(
+                    L.T("Die heruntergeladene Datei ist Version {0}, installiert ist {1}. Im Release liegt keine neuere Datei.",
+                        "The downloaded file is version {0}, installed is {1}. The release doesn't contain a newer file."),
+                    Normalize(downloaded).ToString(3), CurrentVersion));
+            }
 
             return tempExe;
         }
+
+        static Version ReadFileVersion(string path)
+        {
+            try
+            {
+                var vi = FileVersionInfo.GetVersionInfo(path);
+                if (vi.FileMajorPart == 0 && vi.FileMinorPart == 0 && vi.FileBuildPart == 0) return null;
+                return new Version(vi.FileMajorPart, vi.FileMinorPart, vi.FileBuildPart);
+            }
+            catch { return null; }
+        }
+
+        static Version Normalize(Version v)
+        {
+            return new Version(v.Major, Math.Max(v.Minor, 0), Math.Max(v.Build, 0));
+        }
+
+        static void TryDeleteDirectory(string dir)
+        {
+            try { if (Directory.Exists(dir)) Directory.Delete(dir, true); } catch { }
+        }
+
+        public const string UpdatedArg = "--updated";
+        const string BackupSuffix = ".old";
 
         public static void ApplyUpdateAndRestart(string newExePath)
         {
@@ -286,38 +342,77 @@ namespace RetracBoost
             // Falls die Datei ein Setup-Installer ist (z.B. RetracBoost-Setup.exe), Installer starten
             if (Path.GetFileName(newExePath).IndexOf("setup", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                try
-                {
-                    Process.Start(new ProcessStartInfo(newExePath) { UseShellExecute = true });
-                    Environment.Exit(0);
-                    return;
-                }
-                catch { }
+                Process.Start(new ProcessStartInfo(newExePath) { UseShellExecute = true });
+                Environment.Exit(0);
+                return;
             }
 
-            string scriptPath = Path.Combine(Path.GetTempPath(), "retracboost_updater.bat");
+            // Eine laufende EXE lässt sich unter Windows nicht überschreiben, aber umbenennen.
+            // Darum: laufende Datei zur Seite schieben, neue an ihren Platz, neu starten.
+            // Das alte Batch-Skript hat kopiert, während die App noch lief - die Kopie schlug
+            // still fehl und die alte Version startete wieder.
+            string backup = currentExe + BackupSuffix;
+            try { if (File.Exists(backup)) File.Delete(backup); } catch { }
+            if (File.Exists(backup))
+                backup = currentExe + "." + Guid.NewGuid().ToString("N").Substring(0, 8) + BackupSuffix;
 
-            // Batch-Skript: Wartet 1 s bis die aktuelle App schließt, überschreibt die EXE und startet sie neu
-            string script = string.Format(
-                "@echo off\r\n" +
-                "timeout /t 1 /nobreak >nul\r\n" +
-                "copy /y \"{0}\" \"{1}\" >nul\r\n" +
-                "del \"{0}\" >nul 2>&1\r\n" +
-                "start \"\" \"{1}\"\r\n" +
-                "del \"%~f0\" >nul 2>&1\r\n",
-                newExePath, currentExe);
-
-            File.WriteAllText(scriptPath, script);
-
-            var psi = new ProcessStartInfo("cmd.exe", "/c \"" + scriptPath + "\"")
+            try
             {
-                CreateNoWindow = true,
+                File.Move(currentExe, backup);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(string.Format(
+                    L.T("Retrac Boost kann sich in {0} nicht ersetzen ({1}). Starte es als Administrator und versuch es nochmal.",
+                        "Retrac Boost can't replace itself in {0} ({1}). Run it as administrator and try again."),
+                    currentDir, ex.Message), ex);
+            }
+
+            try
+            {
+                File.Copy(newExePath, currentExe, false);
+            }
+            catch
+            {
+                // Alte Datei zurück, damit die App weiter startet
+                try { File.Move(backup, currentExe); } catch { }
+                throw;
+            }
+
+            TryDeleteDirectory(Path.GetDirectoryName(newExePath));
+
+            Process.Start(new ProcessStartInfo(currentExe, UpdatedArg)
+            {
                 UseShellExecute = false,
                 WorkingDirectory = currentDir
-            };
-
-            Process.Start(psi);
+            });
             Environment.Exit(0);
+        }
+
+        // Nach einem Update: die zur Seite geschobene alte EXE entfernen.
+        // Der alte Prozess beendet sich evtl. gerade noch, darum ein paar Versuche.
+        public static void CleanupAfterUpdate()
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    string currentExe = Process.GetCurrentProcess().MainModule.FileName;
+                    string dir = Path.GetDirectoryName(currentExe);
+                    string pattern = Path.GetFileName(currentExe) + "*" + BackupSuffix;
+                    for (int attempt = 0; attempt < 10; attempt++)
+                    {
+                        string[] left = Directory.GetFiles(dir, pattern);
+                        if (left.Length == 0) return;
+                        foreach (var f in left)
+                        {
+                            try { File.Delete(f); } catch { }
+                        }
+                        await Task.Delay(1000);
+                    }
+                }
+                catch { }
+            });
         }
     }
 }

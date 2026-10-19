@@ -1,0 +1,40 @@
+# Baut App und Setup bei jedem Pull Request, damit kaputter Code nicht erst beim Release auffällt.
+name: Build
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Alte Build-Reste entfernen
+        shell: pwsh
+        run: |
+          foreach ($d in 'RetracBoost/obj','RetracBoost/bin','RetracBoostSetup/obj','RetracBoostSetup/bin') {
+            if (Test-Path $d) { Remove-Item $d -Recurse -Force }
+          }
+
+      - name: Bauen (App + Setup)
+        shell: pwsh
+        run: ./RetracBoost/build.ps1 -Config Release
+
+      - name: Versionen prüfen
+        shell: pwsh
+        run: |
+          $src = Get-Content RetracBoost/AutoUpdater.cs -Raw
+          if ($src -notmatch 'CurrentVersion = "([^"]+)"') { throw "CurrentVersion nicht gefunden" }
+          $want = $Matches[1]
+          foreach ($f in 'RetracBoost.exe','RetracBoost-Setup.exe') {
+            $vi = (Get-Item $f).VersionInfo
+            $v = "{0}.{1}.{2}" -f $vi.FileMajorPart, $vi.FileMinorPart, $vi.FileBuildPart
+            "{0}: {1:N0} Bytes, Version {2}" -f $f, (Get-Item $f).Length, $v
+            if ($v -ne $want) { throw "$f hat Version $v, AutoUpdater sagt $want" }
+          }
