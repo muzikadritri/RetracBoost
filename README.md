@@ -30,10 +30,12 @@ Steam-Spiele zeigen das Store-Bild vom Steam-CDN, die anderen das `og:image` der
 
 Pro Spiel gibt es einzelne Schalter. Alles wirkt über Windows und die Dateien des Spiels, das laufende Spiel wird nicht angefasst (wichtig wegen VAC, Easy Anti-Cheat, BattlEye, Vanguard):
 - **CPU-Priorität hoch** über Image File Execution Options (Windows setzt sie beim Start)
+- **Datenträger- und RAM-Priorität hoch** (gegen Nachladeruckler)
+- **Netzwerk-Priorität** (QoS-Regel mit DSCP 46 für die Spiel-Exe)
 - **Grafikkarte: hohe Leistung** (Windows-Grafikeinstellung pro Exe, wirkt bei zwei GPUs)
 - **Vollbildoptimierung aus**
-- **Werte in der Konfigurationsdatei des Spiels**, z. B. VSync aus (CS2 `cs2_video.txt`, Fortnite/PUBG `GameUserSettings.ini`, GTA V `settings.xml`, Minecraft `options.txt`). Geändert werden nur Schlüssel, die das Spiel selbst angelegt hat, nie während es läuft. Ausschalten schreibt die alten Werte zurück.
-- **Startoptionen** zum Kopieren (z. B. Apex `+fps_max 0`)
+- **Werte in der Konfigurationsdatei des Spiels**: VSync, Schatten, Effekte, Nachbearbeitung, Kantenglättung, Vollbild und mehr, je nach Spiel 2 bis 8 Schalter (CS2 `cs2_video.txt`, Fortnite/VALORANT/PUBG `GameUserSettings.ini`, GTA V `settings.xml`, Apex `videoconfig.txt`, Rocket League `TASystemSettings.ini`, Minecraft `options.txt`). Geändert werden nur Schlüssel, die das Spiel selbst angelegt hat, nie während es läuft. Ausschalten schreibt die alten Werte zurück.
+- **Startoptionen** zum Kopieren (CS2 und Apex `+fps_max 0`, Apex `-novid`)
 
 Spiele werden in Steam-, Epic- und Riot-Bibliotheken gesucht; sonst lässt sich die Exe selbst wählen.
 Eigene Spiele kommen als **Plugin (ZIP)** dazu, ohne Code, nur mit den eingebauten Aktionen. Format: [docs/plugins.md](docs/plugins.md), Beispiel: `examples/plugins/rainbow-six-siege.zip`.

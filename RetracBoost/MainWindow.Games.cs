@@ -183,7 +183,7 @@ namespace RetracBoost
                 {
                     var t = a.CreateTweak(g);
                     if (t == null) continue;
-                    bool needsAdmin = t is GamePriorityTweak;
+                    bool needsAdmin = t is GamePriorityTweak || t is GameIoPriorityTweak || t is GameQosTweak;
                     var row = new Row(t, () => (!needsAdmin || Admin.IsElevated) && t.Relevant);
                     row.Busy = true;
                     row.Detail = L.T("Prüfe …", "Checking …");
@@ -204,8 +204,8 @@ namespace RetracBoost
             GameLaunchList.ItemsSource = launch;
             GameLaunchTitle.Visibility = launch.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
-            bool anyAdmin = g.Actions.Any(a => a.Kind == GameActionKind.Priority);
-            GameAdminText.Text = L.T("Für die CPU-Priorität muss Retrac Boost als Administrator laufen.", "The CPU priority needs Retrac Boost to run as administrator.");
+            bool anyAdmin = g.Actions.Any(a => a.Kind == GameActionKind.Priority || a.Kind == GameActionKind.IoPriority || a.Kind == GameActionKind.NetworkQos);
+            GameAdminText.Text = L.T("Für Priorität und Netzwerk-Priorität muss Retrac Boost als Administrator laufen.", "Priority and network priority need Retrac Boost to run as administrator.");
             GameAdminText.Visibility = anyAdmin && !Admin.IsElevated ? Visibility.Visible : Visibility.Collapsed;
 
             var _ = RefreshGameRowsAsync(card);

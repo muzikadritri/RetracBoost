@@ -170,6 +170,8 @@ namespace RetracBoost
 
             string good = "{\"format\":1,\"id\":\"test-spiel\",\"name\":\"Test\",\"exes\":[\"Test.exe\"],\"optimizations\":[{\"type\":\"priority\"}]}";
             Expect(root, "gültiges Minimal-Plugin", true, builtIn, new Dictionary<string, string> { { "manifest.json", good } });
+            Expect(root, "Plugin mit allen Windows-Aktionen", true, builtIn, new Dictionary<string, string> { { "manifest.json",
+                good.Replace("{\"type\":\"priority\"}", "{\"type\":\"priority\"},{\"type\":\"io_priority\"},{\"type\":\"network_qos\"},{\"type\":\"gpu_high_performance\"},{\"type\":\"fullscreen_optimizations_off\"}") } });
             Expect(root, "Ordner im ZIP wird übersprungen", true, builtIn, new Dictionary<string, string> { { "test/manifest.json", good } });
             Expect(root, "DLL im ZIP abgelehnt", false, builtIn, new Dictionary<string, string> { { "manifest.json", good }, { "hook.dll", "MZ" } });
             Expect(root, "Unterordner abgelehnt", false, builtIn, new Dictionary<string, string> { { "manifest.json", good }, { "a/b.txt", "x" } });

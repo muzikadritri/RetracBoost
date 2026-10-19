@@ -17,7 +17,7 @@ namespace RetracBoost
     // Eingebaute Spiele und Plugins benutzen dieselben Klassen (siehe GamePlugins.cs).
     // ------------------------------------------------------------------------------------------
 
-    enum GameActionKind { Priority, GpuHighPerformance, FullscreenOptimizationsOff, Config, LaunchOptions }
+    enum GameActionKind { Priority, IoPriority, NetworkQos, GpuHighPerformance, FullscreenOptimizationsOff, Config, LaunchOptions }
 
     enum ConfigFormat { Ini, KeyValues, Colon, Xml }
 
@@ -44,6 +44,10 @@ namespace RetracBoost
         {
             return new GameAction { Kind = GameActionKind.Priority, Key = "prio", Level = level };
         }
+
+        public static GameAction Io() { return new GameAction { Kind = GameActionKind.IoPriority, Key = "io" }; }
+
+        public static GameAction Qos() { return new GameAction { Kind = GameActionKind.NetworkQos, Key = "qos" }; }
 
         public static GameAction Gpu() { return new GameAction { Kind = GameActionKind.GpuHighPerformance, Key = "gpu" }; }
 
@@ -107,6 +111,11 @@ namespace RetracBoost
                 case GameActionKind.Priority:
                     return L.T("CPU-Priorität " + LevelText(Level) + " für " + exes + " (Registry, Image File Execution Options)",
                                "CPU priority " + LevelText(Level) + " for " + exes + " (registry, Image File Execution Options)");
+                case GameActionKind.IoPriority:
+                    return L.T("Datenträger- und Arbeitsspeicher-Priorität hoch für " + exes + " (Registry, Image File Execution Options)",
+                               "High disk and memory priority for " + exes + " (registry, Image File Execution Options)");
+                case GameActionKind.NetworkQos:
+                    return L.T("Netzwerk-Priorität DSCP 46 für " + exes + " (Windows-QoS-Regel)", "Network priority DSCP 46 for " + exes + " (Windows QoS policy)");
                 case GameActionKind.GpuHighPerformance:
                     return L.T("Windows-Grafikeinstellung „Hohe Leistung“ für " + exes, "Windows graphics setting “High performance” for " + exes);
                 case GameActionKind.FullscreenOptimizationsOff:
@@ -126,6 +135,8 @@ namespace RetracBoost
             switch (Kind)
             {
                 case GameActionKind.Priority: return new GamePriorityTweak(id, g, Level, Title, Summary);
+                case GameActionKind.IoPriority: return new GameIoPriorityTweak(id, g, Title, Summary);
+                case GameActionKind.NetworkQos: return new GameQosTweak(id, g, Title, Summary);
                 case GameActionKind.GpuHighPerformance: return new GpuPreferenceTweak(id, g, Title, Summary);
                 case GameActionKind.FullscreenOptimizationsOff: return new GameFsoTweak(id, g, Title, Summary);
                 case GameActionKind.Config: return new ConfigFileTweak(id, g, this);
@@ -472,6 +483,166 @@ namespace RetracBoost
         }
 
         public override string Snapshot() { return Snap(Items()); }
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // Datenträger- und Speicherpriorität über Image File Execution Options (IoPriority, PagePriority).
+    // Das Spiel lädt Texturen und Kartenteile dann vor Hintergrundprogrammen, und Windows lagert seine
+    // Speicherseiten als letztes aus.
+    // ------------------------------------------------------------------------------------------
+    sealed class GameIoPriorityTweak : Tweak
+    {
+        const string IfeoPath = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\";
+
+        readonly string id, title, summary;
+        readonly GameDef game;
+
+        public GameIoPriorityTweak(string id, GameDef game, string title, string summary)
+        {
+            this.id = id; this.game = game; this.title = title; this.summary = summary;
+        }
+
+        List<RegItem> Items()
+        {
+            var list = new List<RegItem>();
+            foreach (var e in game.Exes.Where(x => GamePriorityTweak.SafeExe.IsMatch(x)))
+            {
+                list.Add(RegItem.Dw(IfeoPath + e + @"\PerfOptions", "IoPriority", 3, null));     // 3 = hoch
+                list.Add(RegItem.Dw(IfeoPath + e + @"\PerfOptions", "PagePriority", 5, null));   // 5 = höchste normale Stufe
+            }
+            return list;
+        }
+
+        public override string Id { get { return id; } }
+        public override string Title { get { return title ?? L.T("Datenträger- und RAM-Priorität hoch", "High disk and RAM priority"); } }
+        public override string Summary
+        {
+            get
+            {
+                return summary ?? L.T("Spiel lädt vor Hintergrundprogrammen von der Platte, seine Daten bleiben länger im RAM. Hilft gegen Nachladeruckler",
+                                      "The game reads from disk before background programs and its data stays in RAM longer. Helps against loading stutter");
+            }
+        }
+        public override bool Relevant { get { return Items().Count > 0; } }
+        public override string Detail
+        {
+            get
+            {
+                if (!Admin.IsElevated) return Summary + L.T(" · braucht Administratorrechte", " · needs administrator rights");
+                if (RegStore.AllSet(Items()) && !WeApplied) return Summary + L.T(" · war schon gesetzt", " · was already set");
+                return Summary;
+            }
+        }
+
+        public override bool IsApplied() { return Relevant && RegStore.AllSet(Items()); }
+        public override void Apply() { RegStore.Apply(id, Items()); }
+
+        public override void Revert()
+        {
+            var mine = Items().Where(i => Store.Get(i.BackupKey(id)) != null).ToList();
+            RegStore.Revert(id, mine);
+            foreach (var it in mine)
+            {
+                Reg.DeleteKeyIfEmpty(it.Path);
+                Reg.DeleteKeyIfEmpty(it.Path.Substring(0, it.Path.LastIndexOf('\\')));
+            }
+        }
+
+        public override string Snapshot() { return Snap(Items()); }
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // Netzwerk-Priorität: Windows-QoS-Regel, die alle Pakete der Spiel-Exe mit DSCP 46 (Expedited Forwarding)
+    // markiert. Router mit QoS/WMM schicken sie dann vor Downloads und Streams raus.
+    // Teilt sich die NLA-Einstellung mit der Spiel-Zeile im Boost-Tab (gleiche Sicherung "qosnla").
+    // ------------------------------------------------------------------------------------------
+    sealed class GameQosTweak : Tweak
+    {
+        const string NlaPath = @"SYSTEM\CurrentControlSet\Services\Tcpip\QoS";
+        const string NlaId = "qosnla";
+        const string OursPrefix = "qos.ours|";
+
+        readonly string id, title, summary;
+        readonly GameDef game;
+
+        public GameQosTweak(string id, GameDef game, string title, string summary)
+        {
+            this.id = id; this.game = game; this.title = title; this.summary = summary;
+        }
+
+        static RegItem Nla() { return RegItem.Str(NlaPath, "Do not use NLA", "1", null); }
+
+        List<Tuple<string, string>> Policies()
+        {
+            var safe = System.Text.RegularExpressions.Regex.Replace(game.Id, @"[^a-z0-9\-]", "");
+            return game.Exes.Where(e => GamePriorityTweak.SafeExe.IsMatch(e))
+                       .Select((e, i) => Tuple.Create("RetracBoost-g-" + safe + "-" + i, e)).ToList();
+        }
+
+        public override string Id { get { return id; } }
+        public override string Title { get { return title ?? L.T("Netzwerk-Priorität (DSCP 46)", "Network priority (DSCP 46)"); } }
+        public override string Summary
+        {
+            get
+            {
+                return summary ?? L.T("Windows markiert die Pakete des Spiels als Echtzeit-Verkehr. Wirkt, wenn der Router QoS oder WMM beachtet",
+                                      "Windows marks the game's packets as real-time traffic. Works when the router honours QoS or WMM");
+            }
+        }
+        public override bool Relevant { get { return Policies().Count > 0; } }
+        public override string Detail
+        {
+            get { return Admin.IsElevated ? Summary : Summary + L.T(" · braucht Administratorrechte", " · needs administrator rights"); }
+        }
+        public override string BusyText { get { return L.T("Setze QoS-Regel …", "Setting QoS policy …"); } }
+        public override bool WeApplied { get { return Policies().Any(p => Store.Get(OursPrefix + p.Item1) == "1"); } }
+
+        public override bool IsApplied()
+        {
+            var ps = Policies();
+            if (ps.Count == 0 || !RegStore.AllSet(new[] { Nla() })) return false;
+            string names = string.Join(",", ps.Select(p => Sh.Q(p.Item1)));
+            var r = Sh.PowerShell("$n=@(Get-NetQosPolicy -PolicyStore localhost -ErrorAction SilentlyContinue | Where-Object { @(" + names + ") -contains $_.Name -and $_.DSCPAction -eq 46 }).Count;'N='+$n");
+            return r.Ok && r.Out.Contains("N=" + ps.Count);
+        }
+
+        public override void Apply()
+        {
+            RegStore.Apply(NlaId, new[] { Nla() });
+            foreach (var p in Policies())
+            {
+                var r = Sh.PowerShell(
+                    "Get-NetQosPolicy -PolicyStore localhost -Name " + Sh.Q(p.Item1) + " -ErrorAction SilentlyContinue | Remove-NetQosPolicy -PolicyStore localhost -Confirm:$false;" +
+                    "New-NetQosPolicy -PolicyStore localhost -Name " + Sh.Q(p.Item1) + " -AppPathNameMatchCondition " + Sh.Q(p.Item2) +
+                    " -DSCPAction 46 -NetworkProfile All | Out-Null;'OK'");
+                if (!r.Ok) throw new InvalidOperationException(r.Text);
+                Store.Set(OursPrefix + p.Item1, "1");
+            }
+        }
+
+        public override void Revert()
+        {
+            string left = "0";
+            foreach (var p in Policies())
+            {
+                var r = Sh.PowerShell(
+                    "Get-NetQosPolicy -PolicyStore localhost -Name " + Sh.Q(p.Item1) + " -ErrorAction SilentlyContinue | Remove-NetQosPolicy -PolicyStore localhost -Confirm:$false;" +
+                    "$n=@(Get-NetQosPolicy -PolicyStore localhost -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'RetracBoost*' }).Count;'LEFT='+$n");
+                if (!r.Ok) throw new InvalidOperationException(r.Text);
+                Store.Set(OursPrefix + p.Item1, null);
+                var m = System.Text.RegularExpressions.Regex.Match(r.Out, @"LEFT=(\d+)");
+                if (m.Success) left = m.Groups[1].Value;
+            }
+            // NLA erst zurück, wenn keine Regel dieser App mehr existiert (auch nicht vom Boost-Tab)
+            if (left == "0" && Store.Get("bk|" + NlaId + "|" + NlaPath + "|Do not use NLA") != null)
+                RegStore.Revert(NlaId, new[] { Nla() });
+        }
+
+        public override string Snapshot()
+        {
+            var r = Sh.PowerShell("Get-NetQosPolicy -PolicyStore localhost -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'RetracBoost-g-*' } | ForEach-Object { $_.Name }");
+            return "qos=" + r.Out.Trim();
+        }
     }
 
     // ------------------------------------------------------------------------------------------
@@ -837,62 +1008,98 @@ namespace RetracBoost
     // ------------------------------------------------------------------------------------------
     // Die 8 eingebauten Spiele. Bilder: Steam-Spiele vom Steam-CDN (offizielles Store-Bild),
     // die anderen aus dem og:image der offiziellen Seite des Herstellers.
+    // Konfigurationswerte sind die Schlüssel, die das jeweilige Spiel selbst in seine Datei schreibt.
     // ------------------------------------------------------------------------------------------
     static class BuiltInGames
     {
+        static ConfigEntry E(string key, string value) { return new ConfigEntry(null, key, value); }
+        static ConfigEntry E(string section, string key, string value) { return new ConfigEntry(section, key, value); }
+
+        /// <summary>Die Windows-Schalter, die jedes Spiel mit bekannter Exe bekommt.</summary>
+        static GameAction[] WindowsActions()
+        {
+            return new[] { GameAction.Priority(), GameAction.Io(), GameAction.Qos(), GameAction.Gpu(), GameAction.Fso() };
+        }
+
+        static GameDef With(GameDef g, params GameAction[] actions)
+        {
+            if (g.Exes.Length > 0) g.Actions.AddRange(WindowsActions());
+            g.Actions.AddRange(actions);
+            return g;
+        }
+
         public static List<GameDef> All()
         {
             var vsyncOff = L.T("VSync aus", "VSync off");
 
+            const string mc = "{appdata}/.minecraft/options.txt";
+            const string cs = "{steamroot}/userdata/*/730/local/cfg/cs2_video.txt";
+            const string gta = "{documents}/Rockstar Games/GTA V/settings.xml";
+            const string fn = "{localappdata}/FortniteGame/Saved/Config/WindowsClient/GameUserSettings.ini";
+            const string val = "{localappdata}/VALORANT/Saved/Config/*/Windows/GameUserSettings.ini";
+            const string apex = "{savedgames}/Respawn/Apex/local/videoconfig.txt";
+            const string rl = "{documents}/My Games/Rocket League/TAGame/Config/TASystemSettings.ini";
+            const string pubg = "{localappdata}/TslGame/Saved/Config/WindowsNoEditor/GameUserSettings.ini";
+
             return new List<GameDef>
             {
-                new GameDef
+                With(new GameDef
                 {
                     Id = "minecraft", Name = "Minecraft", Publisher = "Mojang Studios",
                     ImagePage = "https://www.minecraft.net/en-us",
-                    Description = L.T("Java Edition. Die Werte stehen in options.txt, Minecraft vorher schließen.",
-                                      "Java Edition. The values live in options.txt, close Minecraft first."),
-                    Actions =
-                    {
-                        GameAction.Config("fps", L.T("VSync aus, FPS ohne Limit", "VSync off, no FPS limit"),
-                            L.T("enableVsync = false, maxFps = 260 (in Minecraft „Unbegrenzt“)", "enableVsync = false, maxFps = 260 (Minecraft's “Unlimited”)"),
-                            "{appdata}/.minecraft/options.txt", ConfigFormat.Colon,
-                            new ConfigEntry(null, "enableVsync", "false"),
-                            new ConfigEntry(null, "maxFps", "260")),
-                        GameAction.Config("light", L.T("Leichtere Grafik", "Lighter graphics"),
-                            L.T("Grafik „Schnell“, keine Wolken und Objektschatten, wenige Partikel, Biom-Übergang aus",
-                                "Graphics “Fast”, no clouds or entity shadows, few particles, biome blend off"),
-                            "{appdata}/.minecraft/options.txt", ConfigFormat.Colon,
-                            new ConfigEntry(null, "graphicsMode", "0"),
-                            new ConfigEntry(null, "renderClouds", "false"),
-                            new ConfigEntry(null, "entityShadows", "false"),
-                            new ConfigEntry(null, "particles", "2"),
-                            new ConfigEntry(null, "biomeBlendRadius", "0")),
-                        GameAction.Config("distance", L.T("Sichtweite 8 Chunks", "Render distance 8 chunks"),
-                            L.T("renderDistance und simulationDistance auf 8. Spürbar mehr FPS, man sieht weniger weit",
-                                "renderDistance and simulationDistance set to 8. Clearly more FPS, you see less far"),
-                            "{appdata}/.minecraft/options.txt", ConfigFormat.Colon,
-                            new ConfigEntry(null, "renderDistance", "8"),
-                            new ConfigEntry(null, "simulationDistance", "8"))
-                    }
+                    Description = L.T("Java Edition. Die Werte stehen in options.txt, Minecraft vorher schließen. Minecraft läuft als javaw.exe, deshalb gibt es hier keine Prioritäts-Schalter.",
+                                      "Java Edition. The values live in options.txt, close Minecraft first. Minecraft runs as javaw.exe, so there are no priority switches here.")
                 },
-                new GameDef
+                    GameAction.Config("fps", L.T("VSync aus, FPS ohne Limit", "VSync off, no FPS limit"),
+                        L.T("enableVsync = false, maxFps = 260 (in Minecraft „Unbegrenzt“)", "enableVsync = false, maxFps = 260 (Minecraft's “Unlimited”)"),
+                        mc, ConfigFormat.Colon, E("enableVsync", "false"), E("maxFps", "260")),
+                    GameAction.Config("light", L.T("Leichtere Grafik", "Lighter graphics"),
+                        L.T("Grafik „Schnell“, keine Wolken und Objektschatten, wenige Partikel, Biom-Übergang aus",
+                            "Graphics “Fast”, no clouds or entity shadows, few particles, biome blend off"),
+                        mc, ConfigFormat.Colon, E("graphicsMode", "0"), E("renderClouds", "false"), E("entityShadows", "false"), E("particles", "2"), E("biomeBlendRadius", "0")),
+                    GameAction.Config("distance", L.T("Sichtweite 8 Chunks", "Render distance 8 chunks"),
+                        L.T("renderDistance und simulationDistance auf 8. Spürbar mehr FPS, man sieht weniger weit",
+                            "renderDistance and simulationDistance set to 8. Clearly more FPS, you see less far"),
+                        mc, ConfigFormat.Colon, E("renderDistance", "8"), E("simulationDistance", "8")),
+                    GameAction.Config("entities", L.T("Objekte erst näher zeigen", "Show entities closer only"),
+                        L.T("entityDistanceScaling = 0.75: Mobs und Gegenstände erscheinen erst auf 75 % der Entfernung", "entityDistanceScaling = 0.75: mobs and items appear at 75 % of the distance"),
+                        mc, ConfigFormat.Colon, E("entityDistanceScaling", "0.75")),
+                    GameAction.Config("mipmap", L.T("Mipmaps aus", "Mipmaps off"),
+                        L.T("mipmapLevels = 0. Etwas weniger Grafikarbeit, entfernte Blöcke sehen körniger aus", "mipmapLevels = 0. A bit less GPU work, distant blocks look grainier"),
+                        mc, ConfigFormat.Colon, E("mipmapLevels", "0")),
+                    GameAction.Config("effects", L.T("Bildschirm-Effekte aus", "Screen effects off"),
+                        L.T("Kein Kamerawackeln beim Laufen, keine Sichtfeld- und Verzerrungseffekte", "No view bobbing, no FOV or distortion effects"),
+                        mc, ConfigFormat.Colon, E("bobView", "false"), E("fovEffectScale", "0.0"), E("screenEffectScale", "0.0")),
+                    GameAction.Config("input", L.T("Maus: Rohdaten", "Mouse: raw input"),
+                        L.T("rawMouseInput = true: Mausbewegung ohne Windows-Beschleunigung", "rawMouseInput = true: mouse movement without Windows acceleration"),
+                        mc, ConfigFormat.Colon, E("rawMouseInput", "true")),
+                    GameAction.Config("fullscreen", L.T("Vollbild", "Fullscreen"),
+                        L.T("fullscreen = true. Im Vollbild läuft Minecraft meist flüssiger als im Fenster", "fullscreen = true. Minecraft usually runs smoother in fullscreen than windowed"),
+                        mc, ConfigFormat.Colon, E("fullscreen", "true"))),
+
+                With(new GameDef
                 {
                     Id = "cs2", Name = "Counter-Strike 2", Publisher = "Valve", AntiCheat = "VAC", SteamAppId = 730,
                     Exes = new[] { "cs2.exe" },
-                    ExePaths = new[] { "{steam}/Counter-Strike Global Offensive/game/bin/win64/cs2.exe" },
-                    Actions =
-                    {
-                        GameAction.Priority(), GameAction.Gpu(), GameAction.Fso(),
-                        GameAction.Config("video", L.T("VSync aus, NVIDIA Reflex an", "VSync off, NVIDIA Reflex on"),
-                            L.T("setting.mat_vsync = 0, setting.r_low_latency = 1 in cs2_video.txt (alle Steam-Konten)",
-                                "setting.mat_vsync = 0, setting.r_low_latency = 1 in cs2_video.txt (all Steam accounts)"),
-                            "{steamroot}/userdata/*/730/local/cfg/cs2_video.txt", ConfigFormat.KeyValues,
-                            new ConfigEntry(null, "setting.mat_vsync", "0"),
-                            new ConfigEntry(null, "setting.r_low_latency", "1"))
-                    }
+                    ExePaths = new[] { "{steam}/Counter-Strike Global Offensive/game/bin/win64/cs2.exe" }
                 },
-                new GameDef
+                    GameAction.Config("video", L.T("VSync aus, NVIDIA Reflex an", "VSync off, NVIDIA Reflex on"),
+                        L.T("setting.mat_vsync = 0, setting.r_low_latency = 1 in cs2_video.txt (alle Steam-Konten)",
+                            "setting.mat_vsync = 0, setting.r_low_latency = 1 in cs2_video.txt (all Steam accounts)"),
+                        cs, ConfigFormat.KeyValues, E("setting.mat_vsync", "0"), E("setting.r_low_latency", "1")),
+                    GameAction.Config("perf", L.T("Leistungs-Grafik", "Performance graphics"),
+                        L.T("Shader, Partikel und Umgebungsverdeckung niedrig. Schatten bleiben, damit Gegner sichtbar bleiben",
+                            "Shaders, particles and ambient occlusion low. Shadows stay so enemies remain visible"),
+                        cs, ConfigFormat.KeyValues, E("setting.shaderquality", "0"), E("setting.videocfg_particle_detail", "0"), E("setting.videocfg_ao_detail", "0")),
+                    GameAction.Config("aa", L.T("Kantenglättung aus", "Anti-aliasing off"),
+                        L.T("setting.msaa_samples = 0, CMAA aus. Mehr FPS, Kanten etwas zackiger", "setting.msaa_samples = 0, CMAA off. More FPS, slightly jaggier edges"),
+                        cs, ConfigFormat.KeyValues, E("setting.msaa_samples", "0"), E("setting.r_csgo_cmaa_enable", "0")),
+                    GameAction.Config("fullscreen", L.T("Exklusives Vollbild", "Exclusive fullscreen"),
+                        L.T("setting.fullscreen = 1. Geringere Eingabeverzögerung als im randlosen Fenster", "setting.fullscreen = 1. Lower input lag than borderless window"),
+                        cs, ConfigFormat.KeyValues, E("setting.fullscreen", "1")),
+                    GameAction.Launch("steam", "+fps_max 0", L.T("Hebt die FPS-Obergrenze auf", "Removes the FPS cap"))),
+
+                With(new GameDef
                 {
                     Id = "gta5", Name = "Grand Theft Auto V", Publisher = "Rockstar Games", AntiCheat = "BattlEye", SteamAppId = 271590,
                     Exes = new[] { "GTA5.exe", "GTA5_Enhanced.exe" },
@@ -904,16 +1111,24 @@ namespace RetracBoost
                         "{epic}/GTA5_Enhanced.exe",
                         "{programfiles}/Rockstar Games/Grand Theft Auto V/GTA5.exe",
                         "{programfiles}/Rockstar Games/Grand Theft Auto V Enhanced/GTA5_Enhanced.exe"
-                    },
-                    Actions =
-                    {
-                        GameAction.Priority(), GameAction.Gpu(), GameAction.Fso(),
-                        GameAction.Config("vsync", vsyncOff, L.T("VSync value = 0 in settings.xml", "VSync value = 0 in settings.xml"),
-                            "{documents}/Rockstar Games/GTA V/settings.xml", ConfigFormat.Xml,
-                            new ConfigEntry(null, "VSync", "0"))
                     }
                 },
-                new GameDef
+                    GameAction.Config("vsync", vsyncOff, L.T("VSync value = 0 in settings.xml", "VSync value = 0 in settings.xml"),
+                        gta, ConfigFormat.Xml, E("VSync", "0")),
+                    GameAction.Config("grass", L.T("Gras niedrig", "Grass low"),
+                        L.T("GrassQuality = 0. Gras kostet in GTA V auf dem Land besonders viele FPS", "GrassQuality = 0. Grass costs a lot of FPS in the countryside"),
+                        gta, ConfigFormat.Xml, E("GrassQuality", "0")),
+                    GameAction.Config("postfx", L.T("Nachbearbeitung niedrig, keine Bewegungsunschärfe", "Post effects low, no motion blur"),
+                        L.T("PostFX = 0, MotionBlurStrength = 0, Tiefenunschärfe aus", "PostFX = 0, MotionBlurStrength = 0, depth of field off"),
+                        gta, ConfigFormat.Xml, E("PostFX", "0"), E("MotionBlurStrength", "0.000000"), E("DoF", "false")),
+                    GameAction.Config("shadows", L.T("Weiche Schatten und Reflexionen niedrig", "Soft shadows and reflections low"),
+                        L.T("Shadow_SoftShadows = 0, ReflectionQuality = 0, ReflectionMSAA = 0", "Shadow_SoftShadows = 0, ReflectionQuality = 0, ReflectionMSAA = 0"),
+                        gta, ConfigFormat.Xml, E("Shadow_SoftShadows", "0"), E("ReflectionQuality", "0"), E("ReflectionMSAA", "0")),
+                    GameAction.Config("msaa", L.T("MSAA aus, FXAA an", "MSAA off, FXAA on"),
+                        L.T("MSAA kostet viel Leistung, FXAA glättet fast ohne Kosten", "MSAA costs a lot, FXAA smooths edges almost for free"),
+                        gta, ConfigFormat.Xml, E("MSAA", "0"), E("FXAA_Enabled", "true"))),
+
+                With(new GameDef
                 {
                     Id = "fortnite", Name = "Fortnite", Publisher = "Epic Games", AntiCheat = "Easy Anti-Cheat, BattlEye",
                     ImagePage = "https://www.fortnite.com/",
@@ -922,34 +1137,49 @@ namespace RetracBoost
                     {
                         "{epic}/FortniteGame/Binaries/Win64/FortniteClient-Win64-Shipping.exe",
                         "{programfiles}/Epic Games/Fortnite/FortniteGame/Binaries/Win64/FortniteClient-Win64-Shipping.exe"
-                    },
-                    Actions =
-                    {
-                        GameAction.Priority(), GameAction.Gpu(), GameAction.Fso(),
-                        GameAction.Config("vsync", vsyncOff, L.T("bUseVSync = False in GameUserSettings.ini", "bUseVSync = False in GameUserSettings.ini"),
-                            "{localappdata}/FortniteGame/Saved/Config/WindowsClient/GameUserSettings.ini", ConfigFormat.Ini,
-                            new ConfigEntry(null, "bUseVSync", "False")),
-                        GameAction.Config("shadows", L.T("Schatten aus", "Shadows off"),
-                            L.T("sg.ShadowQuality = 0. Kostet sonst viel FPS", "sg.ShadowQuality = 0. Costs a lot of FPS otherwise"),
-                            "{localappdata}/FortniteGame/Saved/Config/WindowsClient/GameUserSettings.ini", ConfigFormat.Ini,
-                            new ConfigEntry("ScalabilityGroups", "sg.ShadowQuality", "0"))
                     }
                 },
-                new GameDef
+                    GameAction.Config("vsync", vsyncOff, L.T("bUseVSync = False in GameUserSettings.ini", "bUseVSync = False in GameUserSettings.ini"),
+                        fn, ConfigFormat.Ini, E("bUseVSync", "False")),
+                    GameAction.Config("shadows", L.T("Schatten aus", "Shadows off"),
+                        L.T("sg.ShadowQuality = 0. Kostet sonst viel FPS", "sg.ShadowQuality = 0. Costs a lot of FPS otherwise"),
+                        fn, ConfigFormat.Ini, E("ScalabilityGroups", "sg.ShadowQuality", "0")),
+                    GameAction.Config("effects", L.T("Effekte, Nachbearbeitung und Beleuchtung niedrig", "Effects, post-processing and lighting low"),
+                        L.T("sg.EffectsQuality, sg.PostProcessQuality, sg.GlobalIlluminationQuality, sg.ReflectionQuality und sg.FoliageQuality auf 0",
+                            "sg.EffectsQuality, sg.PostProcessQuality, sg.GlobalIlluminationQuality, sg.ReflectionQuality and sg.FoliageQuality set to 0"),
+                        fn, ConfigFormat.Ini,
+                        E("ScalabilityGroups", "sg.EffectsQuality", "0"), E("ScalabilityGroups", "sg.PostProcessQuality", "0"),
+                        E("ScalabilityGroups", "sg.GlobalIlluminationQuality", "0"), E("ScalabilityGroups", "sg.ReflectionQuality", "0"),
+                        E("ScalabilityGroups", "sg.FoliageQuality", "0")),
+                    GameAction.Config("blur", L.T("Bewegungsunschärfe und Raytracing aus", "Motion blur and ray tracing off"),
+                        L.T("bMotionBlur = False, bRayTracing = False", "bMotionBlur = False, bRayTracing = False"),
+                        fn, ConfigFormat.Ini, E("bMotionBlur", "False"), E("bRayTracing", "False")),
+                    GameAction.Config("performance", L.T("Performance-Modus", "Performance mode"),
+                        L.T("PreferredRHI = dx11 und PreferredFeatureLevel = es31: Fortnites eigener Performance-Modus. Gilt ab dem nächsten Start",
+                            "PreferredRHI = dx11 and PreferredFeatureLevel = es31: Fortnite's own performance mode. Applies from the next start"),
+                        fn, ConfigFormat.Ini, E("D3DRHIPreference", "PreferredRHI", "dx11"), E("D3DRHIPreference", "PreferredFeatureLevel", "es31"))),
+
+                With(new GameDef
                 {
                     Id = "valorant", Name = "VALORANT", Publisher = "Riot Games", AntiCheat = "Riot Vanguard",
                     ImagePage = "https://playvalorant.com/en-us/",
-                    Description = L.T("Grafikwerte speichert VALORANT im Riot-Konto, deshalb hier nur Windows-Einstellungen.",
-                                      "VALORANT stores graphics values in the Riot account, so only Windows settings here."),
+                    Description = L.T("VALORANT speichert viele Grafikwerte zusätzlich im Riot-Konto und kann lokale Werte beim Start überschreiben.",
+                                      "VALORANT also stores many graphics values in the Riot account and may overwrite local values at start."),
                     Exes = new[] { "VALORANT-Win64-Shipping.exe" },
                     ExePaths = new[]
                     {
                         "{riot}/ShooterGame/Binaries/Win64/VALORANT-Win64-Shipping.exe",
                         "{drives}/Riot Games/VALORANT/live/ShooterGame/Binaries/Win64/VALORANT-Win64-Shipping.exe"
-                    },
-                    Actions = { GameAction.Priority(), GameAction.Gpu(), GameAction.Fso() }
+                    }
                 },
-                new GameDef
+                    GameAction.Config("vsync", vsyncOff, L.T("bUseVSync = False in GameUserSettings.ini (alle Riot-Konten)", "bUseVSync = False in GameUserSettings.ini (all Riot accounts)"),
+                        val, ConfigFormat.Ini, E("bUseVSync", "False")),
+                    GameAction.Config("low", L.T("Schatten, Effekte und Nachbearbeitung niedrig", "Shadows, effects and post-processing low"),
+                        L.T("sg.ShadowQuality, sg.EffectsQuality und sg.PostProcessQuality auf 0", "sg.ShadowQuality, sg.EffectsQuality and sg.PostProcessQuality set to 0"),
+                        val, ConfigFormat.Ini,
+                        E("ScalabilityGroups", "sg.ShadowQuality", "0"), E("ScalabilityGroups", "sg.EffectsQuality", "0"), E("ScalabilityGroups", "sg.PostProcessQuality", "0"))),
+
+                With(new GameDef
                 {
                     Id = "apex", Name = "Apex Legends", Publisher = "Respawn / EA", AntiCheat = "Easy Anti-Cheat", SteamAppId = 1172470,
                     Exes = new[] { "r5apex.exe", "r5apex_dx12.exe" },
@@ -961,17 +1191,24 @@ namespace RetracBoost
                         "{epic}/r5apex_dx12.exe",
                         "{programfiles}/EA Games/Apex/r5apex.exe",
                         "{programfiles}/EA Games/Apex/r5apex_dx12.exe"
-                    },
-                    Actions =
-                    {
-                        GameAction.Priority(), GameAction.Gpu(), GameAction.Fso(),
-                        GameAction.Config("vsync", vsyncOff, L.T("setting.mat_vsync_mode = 0 in videoconfig.txt", "setting.mat_vsync_mode = 0 in videoconfig.txt"),
-                            "{savedgames}/Respawn/Apex/local/videoconfig.txt", ConfigFormat.KeyValues,
-                            new ConfigEntry(null, "setting.mat_vsync_mode", "0")),
-                        GameAction.Launch("steam", "+fps_max 0", L.T("Hebt die eingebaute FPS-Grenze auf", "Removes the built-in FPS cap"))
                     }
                 },
-                new GameDef
+                    GameAction.Config("vsync", vsyncOff, L.T("setting.mat_vsync_mode = 0 in videoconfig.txt", "setting.mat_vsync_mode = 0 in videoconfig.txt"),
+                        apex, ConfigFormat.KeyValues, E("setting.mat_vsync_mode", "0")),
+                    GameAction.Config("perf", L.T("Umgebungsverdeckung, Volumenlicht und Partikel niedrig", "Ambient occlusion, volumetric light and particles low"),
+                        L.T("setting.ssao_enabled = 0, setting.volumetric_lighting = 0, setting.particle_cpu_level = 0",
+                            "setting.ssao_enabled = 0, setting.volumetric_lighting = 0, setting.particle_cpu_level = 0"),
+                        apex, ConfigFormat.KeyValues, E("setting.ssao_enabled", "0"), E("setting.volumetric_lighting", "0"), E("setting.particle_cpu_level", "0")),
+                    GameAction.Config("sun", L.T("Sonnenschatten aus", "Sun shadows off"),
+                        L.T("setting.csm_enabled = 0. Einer der teuersten Grafikwerte in Apex", "setting.csm_enabled = 0. One of the most expensive graphics values in Apex"),
+                        apex, ConfigFormat.KeyValues, E("setting.csm_enabled", "0")),
+                    GameAction.Config("decals", L.T("Einschusslöcher und Spuren weniger", "Fewer bullet holes and decals"),
+                        L.T("setting.r_decals = 0. Weniger Arbeit in langen Kämpfen", "setting.r_decals = 0. Less work in long fights"),
+                        apex, ConfigFormat.KeyValues, E("setting.r_decals", "0")),
+                    GameAction.Launch("steam", "+fps_max 0", L.T("Hebt die eingebaute FPS-Grenze auf", "Removes the built-in FPS cap")),
+                    GameAction.Launch("steam", "-novid", L.T("Überspringt das Intro-Video beim Start", "Skips the intro video at start"))),
+
+                With(new GameDef
                 {
                     Id = "rocketleague", Name = "Rocket League", Publisher = "Psyonix", AntiCheat = "Easy Anti-Cheat", SteamAppId = 252950,
                     Exes = new[] { "RocketLeague.exe" },
@@ -979,28 +1216,34 @@ namespace RetracBoost
                     {
                         "{steam}/rocketleague/Binaries/Win64/RocketLeague.exe",
                         "{epic}/Binaries/Win64/RocketLeague.exe"
-                    },
-                    Actions =
-                    {
-                        GameAction.Priority(), GameAction.Gpu(), GameAction.Fso(),
-                        GameAction.Config("vsync", vsyncOff, L.T("UseVsync = False in TASystemSettings.ini", "UseVsync = False in TASystemSettings.ini"),
-                            "{documents}/My Games/Rocket League/TAGame/Config/TASystemSettings.ini", ConfigFormat.Ini,
-                            new ConfigEntry("SystemSettings", "UseVsync", "False"))
                     }
                 },
-                new GameDef
+                    GameAction.Config("vsync", vsyncOff, L.T("UseVsync = False in TASystemSettings.ini", "UseVsync = False in TASystemSettings.ini"),
+                        rl, ConfigFormat.Ini, E("SystemSettings", "UseVsync", "False")),
+                    GameAction.Config("effects", L.T("Bildeffekte aus", "Image effects off"),
+                        L.T("Bewegungsunschärfe, Tiefenschärfe, Bloom, Lichtstrahlen und Linsenreflexe aus. Mehr FPS und klarere Sicht auf den Ball",
+                            "Motion blur, depth of field, bloom, light shafts and lens flares off. More FPS and a clearer view of the ball"),
+                        rl, ConfigFormat.Ini,
+                        E("SystemSettings", "MotionBlur", "False"), E("SystemSettings", "DepthOfField", "False"), E("SystemSettings", "Bloom", "False"),
+                        E("SystemSettings", "LightShafts", "False"), E("SystemSettings", "LensFlares", "False")),
+                    GameAction.Config("shadows", L.T("Dynamische Schatten und Umgebungsverdeckung aus", "Dynamic shadows and ambient occlusion off"),
+                        L.T("DynamicShadows = False, AmbientOcclusion = False", "DynamicShadows = False, AmbientOcclusion = False"),
+                        rl, ConfigFormat.Ini, E("SystemSettings", "DynamicShadows", "False"), E("SystemSettings", "AmbientOcclusion", "False"))),
+
+                With(new GameDef
                 {
                     Id = "pubg", Name = "PUBG: BATTLEGROUNDS", Publisher = "KRAFTON", AntiCheat = "BattlEye", SteamAppId = 578080,
                     Exes = new[] { "TslGame.exe" },
-                    ExePaths = new[] { "{steam}/PUBG/TslGame/Binaries/Win64/TslGame.exe" },
-                    Actions =
-                    {
-                        GameAction.Priority(), GameAction.Gpu(), GameAction.Fso(),
-                        GameAction.Config("vsync", vsyncOff, L.T("bUseVSync = False in GameUserSettings.ini", "bUseVSync = False in GameUserSettings.ini"),
-                            "{localappdata}/TslGame/Saved/Config/WindowsNoEditor/GameUserSettings.ini", ConfigFormat.Ini,
-                            new ConfigEntry(null, "bUseVSync", "False"))
-                    }
-                }
+                    ExePaths = new[] { "{steam}/PUBG/TslGame/Binaries/Win64/TslGame.exe" }
+                },
+                    GameAction.Config("vsync", vsyncOff, L.T("bUseVSync = False in GameUserSettings.ini", "bUseVSync = False in GameUserSettings.ini"),
+                        pubg, ConfigFormat.Ini, E("bUseVSync", "False")),
+                    GameAction.Config("low", L.T("Schatten, Effekte und Vegetation niedrig", "Shadows, effects and foliage low"),
+                        L.T("sg.ShadowQuality, sg.EffectsQuality, sg.FoliageQuality und sg.PostProcessQuality auf 0. Weniger Gras heißt auch: Gegner im Gras sind leichter zu sehen",
+                            "sg.ShadowQuality, sg.EffectsQuality, sg.FoliageQuality and sg.PostProcessQuality set to 0. Less grass also makes enemies in it easier to see"),
+                        pubg, ConfigFormat.Ini,
+                        E("ScalabilityGroups", "sg.ShadowQuality", "0"), E("ScalabilityGroups", "sg.EffectsQuality", "0"),
+                        E("ScalabilityGroups", "sg.FoliageQuality", "0"), E("ScalabilityGroups", "sg.PostProcessQuality", "0")))
             };
         }
     }

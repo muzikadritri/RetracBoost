@@ -31,7 +31,7 @@ namespace RetracBoost
         static readonly Regex ActionIdRe = new Regex(@"^[a-z0-9_\-]{1,24}$");
         static readonly string[] ConfigExtensions = { ".ini", ".txt", ".cfg", ".xml", ".conf" };
         static readonly string[] OtherAllowed = { ".txt", ".md" };
-        public static readonly string[] ActionTypes = { "priority", "gpu_high_performance", "fullscreen_optimizations_off", "config", "launch_options" };
+        public static readonly string[] ActionTypes = { "priority", "io_priority", "network_qos", "gpu_high_performance", "fullscreen_optimizations_off", "config", "launch_options" };
 
         public sealed class Package
         {
@@ -321,6 +321,12 @@ namespace RetracBoost
                         if (level != "high" && level != "abovenormal") throw Fail("\"level\" muss high oder abovenormal sein" + where, "\"level\" must be high or abovenormal" + where);
                         return new GameAction { Kind = GameActionKind.Priority, Key = key, Level = level, Title = title, Summary = summary };
                     }
+                case "io_priority":
+                    needExes();
+                    return new GameAction { Kind = GameActionKind.IoPriority, Key = key, Title = title, Summary = summary };
+                case "network_qos":
+                    needExes();
+                    return new GameAction { Kind = GameActionKind.NetworkQos, Key = key, Title = title, Summary = summary };
                 case "gpu_high_performance":
                     needExes();
                     return new GameAction { Kind = GameActionKind.GpuHighPerformance, Key = key, Title = title, Summary = summary };
