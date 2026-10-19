@@ -99,7 +99,7 @@ namespace RetracBoostSetup
                 if (key == null) return;
                 key.SetValue("DisplayName", "Retrac Boost", RegistryValueKind.String);
                 key.SetValue("DisplayIcon", exePath + ",0", RegistryValueKind.String);
-                key.SetValue("DisplayVersion", "1.0.4", RegistryValueKind.String);
+                key.SetValue("DisplayVersion", "1.0.5", RegistryValueKind.String);
                 key.SetValue("Publisher", "Retrac Tools", RegistryValueKind.String);
                 key.SetValue("InstallLocation", installDir, RegistryValueKind.String);
                 key.SetValue("UninstallString", "\"" + uninstallerPath + "\" --uninstall", RegistryValueKind.String);

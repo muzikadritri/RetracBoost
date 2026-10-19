@@ -95,16 +95,61 @@ namespace RetracBoost
 
         [DllImport("user32.dll")] static extern bool RegisterHotKey(IntPtr hwnd, int id, uint modifiers, uint vk);
         [DllImport("user32.dll")] static extern bool UnregisterHotKey(IntPtr hwnd, int id);
+        [DllImport("user32.dll")] static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr module, WinEventProc proc, uint pid, uint tid, uint flags);
+        [DllImport("user32.dll")] static extern bool UnhookWinEvent(IntPtr hook);
+        [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+        [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
+
+        delegate void WinEventProc(IntPtr hook, uint evt, IntPtr hwnd, int idObject, int idChild, uint thread, uint time);
 
         const int WM_HOTKEY = 0x0312, GameMenuHotkeyId = 0x524C;
         const uint MOD_ALT = 0x1, MOD_NOREPEAT = 0x4000, VK_L = 0x4C;
+        const uint EVENT_SYSTEM_FOREGROUND = 3, WINEVENT_OUTOFCONTEXT = 0;
         bool hotkeyRegistered;
+        WinEventProc foregroundProc;      // Feld, damit der GC den Delegaten nicht einsammelt
+        IntPtr foregroundHook;
+        uint lastPid;
+        bool lastPidIsGame;
 
         void InitGameMenu()
         {
             GammaRamp.RecoverAfterCrash();
             var src = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
             if (src != null) src.AddHook(GameMenuHook);
+
+            // Windows meldet jeden Wechsel des Vordergrundfensters. Läuft in unserem Prozess, nicht im Spiel.
+            foregroundProc = (hook, evt, hwnd, idObject, idChild, thread, time) => OnForegroundChanged(hwnd);
+            foregroundHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, IntPtr.Zero, foregroundProc, 0, 0, WINEVENT_OUTOFCONTEXT);
+        }
+
+        /// <summary>Die Bildwerte gelten nur, solange das Spiel vorne ist. Das eigene Menü zählt dabei zum Spiel.</summary>
+        void OnForegroundChanged(IntPtr hwnd)
+        {
+            if (gameMenu == null || gameMenu.IsOwnWindow(hwnd)) return;
+            gameMenu.SetGameWindow(IsGameWindow(hwnd) ? hwnd : IntPtr.Zero);
+        }
+
+        bool IsGameWindow(IntPtr hwnd)
+        {
+            if (hwnd == IntPtr.Zero) return false;
+            uint pid;
+            GetWindowThreadProcessId(hwnd, out pid);
+            if (pid == 0) return false;
+            if (pid == lastPid) return lastPidIsGame;
+
+            string name = null;
+            try { using (var p = System.Diagnostics.Process.GetProcessById((int)pid)) name = p.ProcessName; }
+            catch { }
+            bool isGame = name != null && GameProcessNames().Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+            lastPid = pid;
+            lastPidIsGame = isGame;
+            return isGame;
+        }
+
+        IEnumerable<string> GameProcessNames()
+        {
+            yield return Path.GetFileNameWithoutExtension(OgfnExe);
+            if (!string.IsNullOrEmpty(game.Exe)) yield return Path.GetFileNameWithoutExtension(game.Exe);
         }
 
         IntPtr GameMenuHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -133,7 +178,9 @@ namespace RetracBoost
             var h = new WindowInteropHelper(this).Handle;
             if (on)
             {
-                EnsureGameMenu().ApplySaved();
+                EnsureGameMenu().Enabled = true;
+                lastPid = 0;
+                OnForegroundChanged(GetForegroundWindow());
                 if (!hotkeyRegistered && h != IntPtr.Zero)
                     hotkeyRegistered = RegisterHotKey(h, GameMenuHotkeyId, MOD_ALT | MOD_NOREPEAT, VK_L);
                 gameMenuTweak.Note = hotkeyRegistered ? null
@@ -144,7 +191,7 @@ namespace RetracBoost
                 if (hotkeyRegistered) UnregisterHotKey(h, GameMenuHotkeyId);
                 hotkeyRegistered = false;
                 gameMenuTweak.Note = null;
-                if (gameMenu != null) gameMenu.Hide();
+                if (gameMenu != null) { gameMenu.Hide(); gameMenu.Enabled = false; }
                 GammaRamp.Restore();
             }
             rowGameMenu.Detail = gameMenuTweak.Detail;
@@ -154,6 +201,7 @@ namespace RetracBoost
         {
             if (hotkeyRegistered) UnregisterHotKey(new WindowInteropHelper(this).Handle, GameMenuHotkeyId);
             hotkeyRegistered = false;
+            if (foregroundHook != IntPtr.Zero) { UnhookWinEvent(foregroundHook); foregroundHook = IntPtr.Zero; }
             if (gameMenu != null) gameMenu.Close();
             GammaRamp.Restore();
         }

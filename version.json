@@ -1,5 +1,5 @@
 {
-  "version": "1.0.4",
-  "url": "https://github.com/muzikadritri/RetracBoost/releases/download/v1.0.4/RetracBoost.exe",
-  "changelog": "Neu: Ingame-Menü mit Alt+L\nGamma, Helligkeit, Kontrast und Farbton direkt im Spiel einstellen\nPing-Anzeige im Menü ein- und ausschalten"
+  "version": "1.0.5",
+  "url": "https://github.com/muzikadritri/RetracBoost/releases/download/v1.0.5/RetracBoost.exe",
+  "changelog": "Alt+L-Menü: Bildwerte gelten nur noch im Spiel\nBeim Raustabben ist der PC sofort wieder normal\nNur der Bildschirm mit dem Spiel wird verändert"
 }

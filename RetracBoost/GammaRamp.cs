@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace RetracBoost
@@ -55,10 +56,10 @@ namespace RetracBoost
     }
 
     /// <summary>
-    /// Ändert Gamma, Helligkeit, Kontrast und Farbton systemweit über die Gamma-Kurve der Grafikkarte
-    /// (SetDeviceGammaRamp). Nichts davon greift ins Spiel ein. Die Originalkurven werden vor der ersten
-    /// Änderung gesichert, auch auf die Platte, damit sie nach einem Absturz beim nächsten Start
-    /// zurückkommen. Beim Beenden der App wird automatisch zurückgesetzt.
+    /// Ändert Gamma, Helligkeit, Kontrast und Farbton über die Gamma-Kurve der Grafikkarte (SetDeviceGammaRamp),
+    /// nur auf dem Bildschirm des Spiels und nur, solange das Spiel im Vordergrund ist. Nichts davon greift ins Spiel ein.
+    /// Die Originalkurven werden vor der ersten Änderung gesichert, auch auf die Platte, damit sie nach einem Absturz
+    /// beim nächsten Start zurückkommen. Beim Beenden der App wird automatisch zurückgesetzt.
     /// </summary>
     static class GammaRamp
     {
@@ -67,21 +68,7 @@ namespace RetracBoost
         [DllImport("gdi32.dll")] static extern bool DeleteDC(IntPtr hdc);
         [DllImport("gdi32.dll")] static extern bool GetDeviceGammaRamp(IntPtr hdc, [Out] ushort[] ramp);
         [DllImport("gdi32.dll")] static extern bool SetDeviceGammaRamp(IntPtr hdc, [In] ushort[] ramp);
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-        static extern bool EnumDisplayDevices(string device, uint index, ref DISPLAY_DEVICE info, uint flags);
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        struct DISPLAY_DEVICE
-        {
-            public int cb;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string DeviceName;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] public string DeviceString;
-            public int StateFlags;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] public string DeviceID;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] public string DeviceKey;
-        }
-
-        const int AttachedToDesktop = 0x1;
         const int RampSize = 256 * 3;
         const string ActiveKey = "color.active";
         const string OrigPrefix = "color.orig|";
@@ -109,29 +96,34 @@ namespace RetracBoost
             }
         }
 
-        /// <summary>Setzt die Werte auf allen Bildschirmen. false, wenn Windows die Kurve auf keinem Bildschirm annimmt.</summary>
-        public static bool Apply(ColorSettings s)
+        /// <summary>
+        /// Setzt die Werte nur auf dem Bildschirm <paramref name="device"/> (z. B. \\.\DISPLAY1), auf dem das Spiel läuft.
+        /// Andere Bildschirme, die vorher geändert waren, bekommen ihre Originalkurve zurück.
+        /// Ohne Gerät oder mit Standardwerten wird alles zurückgesetzt. false, wenn Windows die Kurve ablehnt.
+        /// </summary>
+        public static bool Apply(ColorSettings s, string device)
         {
-            if (s.IsDefault) { Restore(); return true; }
+            if (s.IsDefault || string.IsNullOrEmpty(device)) { Restore(); return true; }
             lock (Gate)
             {
                 EnsureHooked();
-                var ramp = Build(s);
-                bool any = false;
-                foreach (var dev in Displays())
+                foreach (var kv in originals.ToList())
                 {
-                    if (!originals.ContainsKey(dev))
-                    {
-                        var orig = Get(dev);
-                        if (orig == null) continue;
-                        originals[dev] = orig;
-                        Store.TrySet(OrigPrefix + dev, Encode(orig));
-                    }
-                    Store.TrySet(ActiveKey, "1");
-                    if (Set(dev, ramp)) any = true;
+                    if (string.Equals(kv.Key, device, StringComparison.OrdinalIgnoreCase)) continue;
+                    Set(kv.Key, kv.Value);
+                    originals.Remove(kv.Key);
+                    Store.TrySet(OrigPrefix + kv.Key, null);
                 }
-                Active = any || Active;
-                return any;
+                if (!originals.ContainsKey(device))
+                {
+                    var orig = Get(device);
+                    if (orig == null) return false;
+                    originals[device] = orig;
+                    Store.TrySet(OrigPrefix + device, Encode(orig));
+                }
+                Store.TrySet(ActiveKey, "1");
+                Active = true;
+                return Set(device, Build(s));
             }
         }
 
@@ -185,18 +177,6 @@ namespace RetracBoost
         }
 
         static ushort ToWord(double v) { return (ushort)Math.Round(Math.Max(0, Math.Min(1, v)) * 65535); }
-
-        static List<string> Displays()
-        {
-            var list = new List<string>();
-            var d = new DISPLAY_DEVICE { cb = Marshal.SizeOf(typeof(DISPLAY_DEVICE)) };
-            for (uint i = 0; EnumDisplayDevices(null, i, ref d, 0); i++)
-            {
-                if ((d.StateFlags & AttachedToDesktop) != 0 && !string.IsNullOrEmpty(d.DeviceName)) list.Add(d.DeviceName);
-                d.cb = Marshal.SizeOf(typeof(DISPLAY_DEVICE));
-            }
-            return list;
-        }
 
         static ushort[] Get(string device)
         {
