@@ -5,7 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Web.Script.Serialization;
+using System.Globalization;
 
 namespace RetracBoost
 {
@@ -225,8 +225,7 @@ namespace RetracBoost
             Dictionary<string, object> root;
             try
             {
-                var js = new JavaScriptSerializer { MaxJsonLength = MaxManifestBytes, RecursionLimit = 16 };
-                root = js.DeserializeObject(json) as Dictionary<string, object>;
+                root = MiniJson.Parse(json) as Dictionary<string, object>;
             }
             catch (Exception ex) { throw Fail("manifest.json ist kein gültiges JSON: " + ex.Message, "manifest.json is not valid JSON: " + ex.Message); }
             if (root == null) throw Fail("manifest.json muss ein Objekt sein.", "manifest.json must be an object.");
@@ -452,6 +451,142 @@ namespace RetracBoost
                 list.Add(Clean(s, 260, key));
             }
             return list;
+        }
+    }
+
+    /// <summary>
+    /// Kleiner, strenger JSON-Leser für manifest.json. Ergebnis: Dictionary&lt;string, object&gt;, object[], string,
+    /// int (ganze Zahlen), double, bool oder null. Begrenzt die Verschachtelungstiefe.
+    /// </summary>
+    static class MiniJson
+    {
+        const int MaxDepth = 16;
+
+        public static object Parse(string text)
+        {
+            int i = 0;
+            var v = Value(text, ref i, 0);
+            Skip(text, ref i);
+            if (i != text.Length) throw Error(text, i, "Zeichen nach dem Ende");
+            return v;
+        }
+
+        static FormatException Error(string t, int i, string what)
+        {
+            int line = 1;
+            for (int k = 0; k < i && k < t.Length; k++) if (t[k] == '\n') line++;
+            return new FormatException(what + " (Zeile " + line + ")");
+        }
+
+        static void Skip(string t, ref int i)
+        {
+            while (i < t.Length && (t[i] == ' ' || t[i] == '\t' || t[i] == '\r' || t[i] == '\n' || t[i] == '\uFEFF')) i++;
+        }
+
+        static object Value(string t, ref int i, int depth)
+        {
+            if (depth > MaxDepth) throw Error(t, i, "zu tief verschachtelt");
+            Skip(t, ref i);
+            if (i >= t.Length) throw Error(t, i, "unerwartetes Ende");
+            char c = t[i];
+            if (c == '{')
+            {
+                i++;
+                var d = new Dictionary<string, object>(StringComparer.Ordinal);
+                Skip(t, ref i);
+                if (i < t.Length && t[i] == '}') { i++; return d; }
+                while (true)
+                {
+                    Skip(t, ref i);
+                    if (i >= t.Length || t[i] != '"') throw Error(t, i, "Schlüssel in Anführungszeichen erwartet");
+                    string key = Str(t, ref i);
+                    Skip(t, ref i);
+                    if (i >= t.Length || t[i] != ':') throw Error(t, i, "':' erwartet");
+                    i++;
+                    if (d.ContainsKey(key)) throw Error(t, i, "Schlüssel doppelt: " + key);
+                    d[key] = Value(t, ref i, depth + 1);
+                    Skip(t, ref i);
+                    if (i < t.Length && t[i] == ',') { i++; continue; }
+                    if (i < t.Length && t[i] == '}') { i++; return d; }
+                    throw Error(t, i, "',' oder '}' erwartet");
+                }
+            }
+            if (c == '[')
+            {
+                i++;
+                var list = new List<object>();
+                Skip(t, ref i);
+                if (i < t.Length && t[i] == ']') { i++; return list.ToArray(); }
+                while (true)
+                {
+                    list.Add(Value(t, ref i, depth + 1));
+                    Skip(t, ref i);
+                    if (i < t.Length && t[i] == ',') { i++; continue; }
+                    if (i < t.Length && t[i] == ']') { i++; return list.ToArray(); }
+                    throw Error(t, i, "',' oder ']' erwartet");
+                }
+            }
+            if (c == '"') return Str(t, ref i);
+            if (Word(t, ref i, "true")) return true;
+            if (Word(t, ref i, "false")) return false;
+            if (Word(t, ref i, "null")) return null;
+            if (c == '-' || (c >= '0' && c <= '9')) return Number(t, ref i);
+            throw Error(t, i, "unerwartetes Zeichen '" + c + "'");
+        }
+
+        static bool Word(string t, ref int i, string w)
+        {
+            if (string.CompareOrdinal(t, i, w, 0, w.Length) != 0) return false;
+            i += w.Length;
+            return true;
+        }
+
+        static object Number(string t, ref int i)
+        {
+            int start = i;
+            if (t[i] == '-') i++;
+            while (i < t.Length && "0123456789.eE+-".IndexOf(t[i]) >= 0) i++;
+            string s = t.Substring(start, i - start);
+            int n;
+            if (int.TryParse(s, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out n)) return n;
+            double d;
+            if (double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out d)) return d;
+            throw Error(t, start, "ungültige Zahl");
+        }
+
+        static string Str(string t, ref int i)
+        {
+            i++; // "
+            var sb = new StringBuilder();
+            while (i < t.Length)
+            {
+                char c = t[i++];
+                if (c == '"') return sb.ToString();
+                if (c < ' ') throw Error(t, i, "Steuerzeichen im Text");
+                if (c != '\\') { sb.Append(c); continue; }
+                if (i >= t.Length) break;
+                char e = t[i++];
+                switch (e)
+                {
+                    case '"': sb.Append('"'); break;
+                    case '\\': sb.Append('\\'); break;
+                    case '/': sb.Append('/'); break;
+                    case 'b': sb.Append('\b'); break;
+                    case 'f': sb.Append('\f'); break;
+                    case 'n': sb.Append('\n'); break;
+                    case 'r': sb.Append('\r'); break;
+                    case 't': sb.Append('\t'); break;
+                    case 'u':
+                        int code;
+                        if (i + 4 > t.Length || !int.TryParse(t.Substring(i, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out code))
+                            throw Error(t, i, "ungültiges \\u");
+                        sb.Append((char)code);
+                        i += 4;
+                        break;
+                    default: throw Error(t, i, "ungültiges Escape");
+                }
+            }
+            throw Error(t, i, "Text ohne Ende");
         }
     }
 }
