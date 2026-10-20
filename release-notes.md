@@ -1,18 +1,15 @@
-Games-Tab: viel mehr Optimierungen
-- Neu für jedes Spiel mit Exe: Datenträger- und RAM-Priorität hoch (gegen Nachladeruckler) und Netzwerk-Priorität per QoS-Regel (DSCP 46).
-- Counter-Strike 2: Leistungs-Grafik, Kantenglättung aus, exklusives Vollbild, Startoption +fps_max 0.
-- GTA V: Gras niedrig, Nachbearbeitung und Bewegungsunschärfe aus, weiche Schatten und Reflexionen niedrig, MSAA aus mit FXAA.
-- Fortnite: Effekte, Beleuchtung und Nachbearbeitung niedrig, Bewegungsunschärfe und Raytracing aus, Performance-Modus.
-- VALORANT: VSync aus, Schatten, Effekte und Nachbearbeitung niedrig.
-- Apex Legends: Umgebungsverdeckung, Volumenlicht und Partikel niedrig, Sonnenschatten aus, weniger Einschusslöcher, Startoption -novid.
-- Rocket League: Bildeffekte aus, dynamische Schatten und Umgebungsverdeckung aus.
-- PUBG: Schatten, Effekte und Vegetation niedrig.
-- Minecraft: Objekte erst näher, Mipmaps aus, Bildschirm-Effekte aus, Maus-Rohdaten, Vollbild.
-- Jeder Schalter setzt beim Ausschalten die alten Werte zurück. Das laufende Spiel wird weiterhin nicht angefasst.
+Alt+L-Menü: Grafik-Presets
+- Neu im Menü: „Schön“ (Episch), „Ausgewogen“ (Hoch), „Leistung“ (niedrig, Sichtweite bleibt gut) und „Original“.
+- Gilt für Fortnite, VALORANT und PUBG. Retrac Boost ändert dafür die Grafikstufen in der GameUserSettings.ini des Spiels.
+- Läuft das Spiel gerade, wird das Preset vorgemerkt und eingetragen, sobald du es schließt. Es gilt dann ab dem nächsten Start. Das laufende Spiel wird nicht angefasst.
+- „Original“ holt die Werte zurück, die vor dem ersten Preset eingestellt waren.
 
-Games tab: many more optimisations
-- New for every game with an exe: high disk and RAM priority and network priority via a QoS policy (DSCP 46).
-- More config switches for all eight games (shadows, effects, post-processing, anti-aliasing, fullscreen and more). Turning a switch off restores the old values.
+Bildschirm-Regler
+- Gamma, Helligkeit, Kontrast und Farbton ändern weiterhin den Bildschirm, auf dem das Spiel läuft, solange es vorne ist. Nur das Spielbild allein zu färben ginge nur mit einem Eingriff ins Spiel, und das wäre ein Bann-Risiko. Im randlosen Vollbild deckt das Spiel den Bildschirm ganz ab.
+- Die Regler erkennen jetzt alle Spiele aus dem Games-Tab, nicht nur Fortnite.
+
+Alt+L menu: graphics presets
+- New: Pretty (Epic), Balanced (High), Performance (low with good view distance) and Original, for Fortnite, VALORANT and PUBG. Applied to the game's config file, from the next game start.
 
 Wichtig für v1.0.1 und v1.0.2
 - In diesen Versionen funktioniert der Update-Knopf noch nicht. Einmal RetracBoost-Setup.exe von dieser Seite installieren, danach klappt er.

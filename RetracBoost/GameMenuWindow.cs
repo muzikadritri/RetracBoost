@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Markup;
@@ -42,6 +44,8 @@ namespace RetracBoost
         static readonly Brush MutedBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x8B, 0x94, 0xA7)));
         static readonly Brush WarnBrush = Freeze(new SolidColorBrush(Color.FromRgb(0xFB, 0xBF, 0x24)));
         static readonly Brush LineBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x20, 0x27, 0x38)));
+        static readonly Brush AccentBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x00, 0xF5, 0xA0)));
+        static readonly Brush DefaultBorderBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2D, 0x38, 0x50)));
 
         const string SliderXaml = @"
 <Style xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
@@ -96,15 +100,19 @@ namespace RetracBoost
   <Setter Property='Cursor' Value='Hand'/>
   <Setter Property='Foreground' Value='#F0F3F9'/>
   <Setter Property='FontSize' Value='12'/>
+  <Setter Property='BorderBrush' Value='#2D3850'/>
   <Setter Property='Template'>
     <Setter.Value>
       <ControlTemplate TargetType='Button'>
-        <Border x:Name='B' Background='#161C2B' BorderBrush='#2D3850' BorderThickness='1' CornerRadius='7' Padding='12,6'>
+        <Border x:Name='B' Background='#161C2B' BorderBrush='{TemplateBinding BorderBrush}' BorderThickness='1' CornerRadius='7' Padding='10,6'>
           <ContentPresenter HorizontalAlignment='Center' VerticalAlignment='Center'/>
         </Border>
         <ControlTemplate.Triggers>
           <Trigger Property='IsMouseOver' Value='True'>
             <Setter TargetName='B' Property='Background' Value='#1E263A'/>
+          </Trigger>
+          <Trigger Property='IsEnabled' Value='False'>
+            <Setter TargetName='B' Property='Opacity' Value='0.4'/>
           </Trigger>
         </ControlTemplate.Triggers>
       </ControlTemplate>
@@ -118,13 +126,17 @@ namespace RetracBoost
         readonly TextBlock pingText, status;
         readonly CheckBox pingSwitch;
         readonly Func<bool> pingOverlayOn;
+        readonly Func<GameDef> presetGame;
+        readonly TextBlock presetTitle, presetStatus;
+        readonly Dictionary<string, Button> presetButtons = new Dictionary<string, Button>();
         readonly Action<bool> setPingOverlay;
         IntPtr previous, gameWindow;
         bool loading, dirty, hiding, enabled;
 
-        public GameMenuWindow(Style switchStyle, Func<bool> pingOverlayOn, Action<bool> setPingOverlay)
+        public GameMenuWindow(Style switchStyle, Func<bool> pingOverlayOn, Action<bool> setPingOverlay, Func<GameDef> presetGame)
         {
             this.pingOverlayOn = pingOverlayOn;
+            this.presetGame = presetGame;
             this.setPingOverlay = setPingOverlay;
             settings = ColorSettings.Load();
 
@@ -158,6 +170,7 @@ namespace RetracBoost
                 Foreground = MutedBrush, FontSize = 11, Margin = new Thickness(0, 0, 0, 12)
             });
 
+            root.Children.Add(SectionTitle(L.T("Bildschirm", "Screen")));
             gamma = AddSlider(root, sliderStyle, "Gamma", gammaValue, ColorSettings.GammaMin, ColorSettings.GammaMax, 0.01);
             brightness = AddSlider(root, sliderStyle, L.T("Helligkeit", "Brightness"), brightnessValue, ColorSettings.BrightnessMin, ColorSettings.BrightnessMax, 0.01);
             contrast = AddSlider(root, sliderStyle, L.T("Kontrast", "Contrast"), contrastValue, ColorSettings.ContrastMin, ColorSettings.ContrastMax, 0.01);
@@ -165,6 +178,26 @@ namespace RetracBoost
 
             status = new TextBlock { Foreground = WarnBrush, FontSize = 11, TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 2, 0, 8) };
             root.Children.Add(status);
+
+            root.Children.Add(new Border { Height = 1, Background = LineBrush, Margin = new Thickness(0, 6, 0, 10) });
+
+            // Grafik-Presets: ändern die Grafikstufen in der Config des Spiels
+            presetTitle = SectionTitle(L.T("Grafik im Spiel", "In-game graphics"));
+            root.Children.Add(presetTitle);
+            var presetRow = new UniformGrid { Columns = 2, Margin = new Thickness(0, 4, 0, 0) };
+            var presetIds = new[] { GraphicsPresets.Pretty, GraphicsPresets.Balanced, GraphicsPresets.Performance, GraphicsPresets.Original };
+            for (int i = 0; i < presetIds.Length; i++)
+            {
+                string id = presetIds[i];
+                var b = new Button { Content = GraphicsPresets.Name(id), Style = buttonStyle, Margin = i % 2 == 0 ? new Thickness(0, 0, 3, 6) : new Thickness(3, 0, 0, 6) };
+                string preset = id;
+                b.Click += (s, e) => ChoosePreset(preset);
+                presetButtons[id] = b;
+                presetRow.Children.Add(b);
+            }
+            root.Children.Add(presetRow);
+            presetStatus = new TextBlock { Foreground = MutedBrush, FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 4) };
+            root.Children.Add(presetStatus);
 
             root.Children.Add(new Border { Height = 1, Background = LineBrush, Margin = new Thickness(0, 6, 0, 10) });
 
@@ -187,8 +220,8 @@ namespace RetracBoost
 
             root.Children.Add(new TextBlock
             {
-                Text = L.T("Wirkt nur, solange das Spiel im Vordergrund ist. Beim Wechsel auf den Desktop oder in ein anderes Programm sind die normalen Werte sofort zurück. Nur im Fenster- oder randlosen Modus sichtbar, nicht im exklusiven Vollbild.",
-                           "Only applies while the game is in front. Switch to the desktop or another program and the normal values are back right away. Only visible in windowed or borderless mode, not in exclusive fullscreen."),
+                Text = L.T("Die Bildschirm-Regler ändern den ganzen Bildschirm, auf dem das Spiel läuft, solange es vorne ist. Nur das Spielbild allein lässt sich ohne Eingriff ins Spiel nicht färben, und das wäre ein Bann-Risiko. Im randlosen Vollbild deckt das Spiel den Bildschirm aber ganz ab. Die Grafik-Presets ändern die Einstellungen des Spiels selbst. Das Menü ist nicht im exklusiven Vollbild sichtbar.",
+                           "The screen sliders change the whole screen the game runs on, while it is in front. Colouring only the game picture is not possible without touching the game, which would risk a ban. In borderless fullscreen the game covers the screen anyway. The graphics presets change the game's own settings. The menu is not visible in exclusive fullscreen."),
                 Foreground = MutedBrush, FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0)
             });
 
@@ -236,6 +269,38 @@ namespace RetracBoost
             Apply();
         }
 
+        /// <summary>Zeigt Spielname, aktives und vorgemerktes Preset neu an.</summary>
+        public void RefreshPresets()
+        {
+            var g = presetGame != null ? presetGame() : null;
+            bool ok = GraphicsPresets.Supports(g);
+            presetTitle.Text = ok ? L.T("Grafik in ", "Graphics in ") + g.Name : L.T("Grafik im Spiel", "In-game graphics");
+            foreach (var b in presetButtons.Values) b.IsEnabled = ok;
+            string current = ok ? GraphicsPresets.Current(g) : null, pending = ok ? GraphicsPresets.Pending(g) : null;
+            foreach (var kv in presetButtons)
+                kv.Value.BorderBrush = kv.Key == (pending ?? current) ? AccentBrush : DefaultBorderBrush;
+            if (!ok)
+                presetStatus.Text = g == null ? L.T("Kein Spiel erkannt.", "No game detected.")
+                    : string.Format(L.T("Presets gibt es für Fortnite, VALORANT und PUBG. {0} gehört nicht dazu.",
+                                        "Presets exist for Fortnite, VALORANT and PUBG. {0} is not one of them."), g.Name);
+            else if (pending != null)
+                presetStatus.Text = string.Format(L.T("{0} wird eingetragen, sobald du {1} schließt. Gilt ab dem nächsten Start.",
+                                                      "{0} will be written once you close {1}. Applies from the next start."), GraphicsPresets.Name(pending), g.Name);
+            else
+                presetStatus.Text = L.T("Schön = Episch, Ausgewogen = Hoch, Leistung = niedrig mit guter Sichtweite. Original holt deine alten Werte zurück.",
+                                        "Pretty = Epic, Balanced = High, Performance = low with good view distance. Original brings back your old values.");
+        }
+
+        void ChoosePreset(string preset)
+        {
+            var g = presetGame != null ? presetGame() : null;
+            string msg;
+            try { msg = GraphicsPresets.Choose(g, preset); }
+            catch (Exception ex) { msg = ex.Message; }
+            RefreshPresets();
+            presetStatus.Text = msg;
+        }
+
         public bool IsOwnWindow(IntPtr hwnd) { return hwnd != IntPtr.Zero && hwnd == new WindowInteropHelper(this).Handle; }
 
         public void Toggle()
@@ -253,6 +318,7 @@ namespace RetracBoost
             previous = fg == own ? IntPtr.Zero : fg;
             PlaceOn(previous != IntPtr.Zero ? previous : own);
             pingSwitch.IsChecked = pingOverlayOn != null && pingOverlayOn();
+            RefreshPresets();
             Show();
             Activate();
             SetForegroundWindow(own);
@@ -370,6 +436,11 @@ namespace RetracBoost
             warmthValue.Text = w == 0 ? "Neutral"
                 : w > 0 ? L.T("Wärmer ", "Warmer ") + w.ToString(c) + " %"
                 : L.T("Kühler ", "Cooler ") + (-w).ToString(c) + " %";
+        }
+
+        static TextBlock SectionTitle(string text)
+        {
+            return new TextBlock { Text = text, Foreground = MutedBrush, FontSize = 11, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) };
         }
 
         static TextBlock ValueText()

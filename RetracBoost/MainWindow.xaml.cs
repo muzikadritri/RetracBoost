@@ -188,8 +188,8 @@ namespace RetracBoost
                     "Turns the boost on automatically when your game starts (no adapter restart)"),
                 null);
             gameMenuTweak = new SettingTweak("gamemenu", L.T("Ingame-Menü (Alt+L)", "In-game menu (Alt+L)"),
-                L.T("Alt+L zeigt über dem Spiel Gamma, Helligkeit, Kontrast und Farbton",
-                    "Alt+L shows gamma, brightness, contrast and color tone over the game"),
+                L.T("Alt+L zeigt über dem Spiel Gamma, Helligkeit, Kontrast und Grafik-Presets",
+                    "Alt+L shows gamma, brightness, contrast and graphics presets over the game"),
                 on => Dispatcher.Invoke(new Action(() => SetGameMenuHotkey(on))), true);
             rowTcp = new Row(tcp, elevated);
             rowBg = new Row(background, elevated);
@@ -249,6 +249,7 @@ namespace RetracBoost
             watchTimer.Tick += (s, e) =>
             {
                 WatchTick();
+                PresetTick();
                 if (++tickCounter % 30 == 0) TrimWorkingSet(); // alle 60 s Working Set trimmen
             };
             watchTimer.Start();

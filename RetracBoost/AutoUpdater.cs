@@ -22,7 +22,7 @@ namespace RetracBoost
 
     public static class AutoUpdater
     {
-        public const string CurrentVersion = "1.0.8";
+        public const string CurrentVersion = "1.0.9";
 
         // Fest eingebaut. Gespeicherte Werte aus alten Versionen (state.ini, github_repo.txt) werden ignoriert und aufgeräumt.
         public const string GitHubRepo = "muzikadritri/RetracBoost";
