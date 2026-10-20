@@ -9,7 +9,7 @@
     <AssemblyName>RetracBoost</AssemblyName>
     <RootNamespace>RetracBoost</RootNamespace>
     <Product>Retrac Boost</Product>
-    <Version>1.0.9</Version>
+    <Version>1.0.10</Version>
     <StartupObject>RetracBoost.Program</StartupObject>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>

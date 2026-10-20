@@ -13,16 +13,21 @@ namespace RetracBoost
         public const double BrightnessMin = -0.3, BrightnessMax = 0.3;
         public const double ContrastMin = 0.7, ContrastMax = 1.4;
         public const double WarmthMin = -1, WarmthMax = 1;
+        public const double SaturationMin = 0, SaturationMax = 1;
 
         public double Gamma = 1;
         public double Brightness;      // -0.3 … +0.3
         public double Contrast = 1;
         public double Warmth;          // -1 kühl … +1 warm
+        public double Saturation;      // 0 … 1 zusätzlich, über den Grafiktreiber (siehe Vibrance)
 
-        public bool IsDefault
+        /// <summary>true, wenn die Gamma-Kurve unverändert bleibt.</summary>
+        public bool CurvesDefault
         {
             get { return Math.Abs(Gamma - 1) < 0.005 && Math.Abs(Brightness) < 0.005 && Math.Abs(Contrast - 1) < 0.005 && Math.Abs(Warmth) < 0.005; }
         }
+
+        public bool IsDefault { get { return CurvesDefault && Saturation < 0.005; } }
 
         public ColorSettings Clone() { return (ColorSettings)MemberwiseClone(); }
 
@@ -33,7 +38,8 @@ namespace RetracBoost
                 Gamma = Read("color.gamma", 1, GammaMin, GammaMax),
                 Brightness = Read("color.brightness", 0, BrightnessMin, BrightnessMax),
                 Contrast = Read("color.contrast", 1, ContrastMin, ContrastMax),
-                Warmth = Read("color.warmth", 0, WarmthMin, WarmthMax)
+                Warmth = Read("color.warmth", 0, WarmthMin, WarmthMax),
+                Saturation = Read("color.saturation", 0, SaturationMin, SaturationMax)
             };
         }
 
@@ -43,6 +49,7 @@ namespace RetracBoost
             Write("color.brightness", Brightness);
             Write("color.contrast", Contrast);
             Write("color.warmth", Warmth);
+            Write("color.saturation", Saturation);
         }
 
         static double Read(string key, double def, double min, double max)
@@ -103,7 +110,7 @@ namespace RetracBoost
         /// </summary>
         public static bool Apply(ColorSettings s, string device)
         {
-            if (s.IsDefault || string.IsNullOrEmpty(device)) { Restore(); return true; }
+            if (s.CurvesDefault || string.IsNullOrEmpty(device)) { Restore(); return true; }
             lock (Gate)
             {
                 EnsureHooked();

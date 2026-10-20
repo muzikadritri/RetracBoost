@@ -121,8 +121,25 @@ namespace RetracBoost
 </Style>";
 
         readonly ColorSettings settings;
-        readonly Slider gamma, brightness, contrast, warmth;
-        readonly TextBlock gammaValue = ValueText(), brightnessValue = ValueText(), contrastValue = ValueText(), warmthValue = ValueText();
+        readonly Slider gamma, brightness, contrast, warmth, saturation;
+        readonly TextBlock gammaValue = ValueText(), brightnessValue = ValueText(), contrastValue = ValueText(), warmthValue = ValueText(), saturationValue = ValueText();
+        readonly Dictionary<string, Button> filterButtons = new Dictionary<string, Button>();
+
+        /// <summary>Farbfilter: fertige Kombinationen der Bildschirm-Regler. Sättigung braucht eine NVIDIA-Karte.</summary>
+        sealed class ColorFilter
+        {
+            public string Name; public double Gamma, Brightness, Contrast, Warmth, Saturation;
+        }
+
+        static readonly ColorFilter[] Filters =
+        {
+            new ColorFilter { Name = "Retrac Edit", Gamma = 1.06, Brightness = 0.02, Contrast = 1.12, Warmth = 0.1, Saturation = 0.85 },
+            new ColorFilter { Name = L.T("Kräftig", "Vivid"), Gamma = 1.0, Brightness = 0, Contrast = 1.08, Warmth = 0, Saturation = 0.5 },
+            new ColorFilter { Name = L.T("Kühl", "Cool"), Gamma = 1.04, Brightness = 0, Contrast = 1.08, Warmth = -0.35, Saturation = 0.45 },
+            new ColorFilter { Name = "Warm", Gamma = 1.0, Brightness = 0.01, Contrast = 1.05, Warmth = 0.4, Saturation = 0.35 },
+            new ColorFilter { Name = L.T("Hell", "Bright"), Gamma = 1.25, Brightness = 0.04, Contrast = 1.0, Warmth = 0, Saturation = 0.25 },
+            new ColorFilter { Name = "Neutral", Gamma = 1, Brightness = 0, Contrast = 1, Warmth = 0, Saturation = 0 }
+        };
         readonly TextBlock pingText, status;
         readonly CheckBox pingSwitch;
         readonly Func<bool> pingOverlayOn;
@@ -170,11 +187,34 @@ namespace RetracBoost
                 Foreground = MutedBrush, FontSize = 11, Margin = new Thickness(0, 0, 0, 12)
             });
 
+            root.Children.Add(SectionTitle(L.T("Farbfilter", "Colour filters")));
+            var filterRow = new UniformGrid { Columns = 3, Margin = new Thickness(0, 0, 0, 6) };
+            for (int i = 0; i < Filters.Length; i++)
+            {
+                var f = Filters[i];
+                var fb = new Button { Content = f.Name, Style = buttonStyle, Margin = new Thickness(i % 3 == 0 ? 0 : 3, 0, i % 3 == 2 ? 0 : 3, 6) };
+                fb.Click += (s, e) => ApplyFilter(f);
+                filterButtons[f.Name] = fb;
+                filterRow.Children.Add(fb);
+            }
+            root.Children.Add(filterRow);
+
             root.Children.Add(SectionTitle(L.T("Bildschirm", "Screen")));
             gamma = AddSlider(root, sliderStyle, "Gamma", gammaValue, ColorSettings.GammaMin, ColorSettings.GammaMax, 0.01);
             brightness = AddSlider(root, sliderStyle, L.T("Helligkeit", "Brightness"), brightnessValue, ColorSettings.BrightnessMin, ColorSettings.BrightnessMax, 0.01);
             contrast = AddSlider(root, sliderStyle, L.T("Kontrast", "Contrast"), contrastValue, ColorSettings.ContrastMin, ColorSettings.ContrastMax, 0.01);
             warmth = AddSlider(root, sliderStyle, L.T("Farbton", "Color tone"), warmthValue, ColorSettings.WarmthMin, ColorSettings.WarmthMax, 0.05);
+            saturation = AddSlider(root, sliderStyle, L.T("Farbsättigung", "Saturation"), saturationValue, ColorSettings.SaturationMin, ColorSettings.SaturationMax, 0.05);
+            if (!Vibrance.Available)
+            {
+                saturation.IsEnabled = false;
+                root.Children.Add(new TextBlock
+                {
+                    Text = L.T("Farbsättigung geht nur mit einer NVIDIA-Karte (Digitale Farbanpassung im Treiber). Die Filter wirken dann etwas schwächer.",
+                               "Saturation needs an NVIDIA card (digital vibrance in the driver). Filters look a bit weaker without it."),
+                    Foreground = MutedBrush, FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, -4, 0, 8)
+                });
+            }
 
             status = new TextBlock { Foreground = WarnBrush, FontSize = 11, TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 2, 0, 8) };
             root.Children.Add(status);
@@ -220,8 +260,8 @@ namespace RetracBoost
 
             root.Children.Add(new TextBlock
             {
-                Text = L.T("Die Bildschirm-Regler ändern den ganzen Bildschirm, auf dem das Spiel läuft, solange es vorne ist. Nur das Spielbild allein lässt sich ohne Eingriff ins Spiel nicht färben, und das wäre ein Bann-Risiko. Im randlosen Vollbild deckt das Spiel den Bildschirm aber ganz ab. Die Grafik-Presets ändern die Einstellungen des Spiels selbst. Das Menü ist nicht im exklusiven Vollbild sichtbar.",
-                           "The screen sliders change the whole screen the game runs on, while it is in front. Colouring only the game picture is not possible without touching the game, which would risk a ban. In borderless fullscreen the game covers the screen anyway. The graphics presets change the game's own settings. The menu is not visible in exclusive fullscreen."),
+                Text = L.T("Farbfilter und Bildschirm-Regler ändern den ganzen Bildschirm, auf dem das Spiel läuft, solange es vorne ist. Nur das Spielbild allein lässt sich ohne Eingriff ins Spiel nicht färben, und das wäre ein Bann-Risiko. Im randlosen Vollbild deckt das Spiel den Bildschirm aber ganz ab. Die Grafik-Presets ändern die Einstellungen des Spiels selbst. Das Menü ist nicht im exklusiven Vollbild sichtbar.",
+                           "Colour filters and screen sliders change the whole screen the game runs on, while it is in front. Colouring only the game picture is not possible without touching the game, which would risk a ban. In borderless fullscreen the game covers the screen anyway. The graphics presets change the game's own settings. The menu is not visible in exclusive fullscreen."),
                 Foreground = MutedBrush, FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0)
             });
 
@@ -240,6 +280,7 @@ namespace RetracBoost
             brightness.Value = settings.Brightness;
             contrast.Value = settings.Contrast;
             warmth.Value = settings.Warmth;
+            saturation.Value = settings.Saturation;
             loading = false;
             UpdateLabels();
 
@@ -389,6 +430,7 @@ namespace RetracBoost
             settings.Brightness = brightness.Value;
             settings.Contrast = contrast.Value;
             settings.Warmth = warmth.Value;
+            settings.Saturation = saturation.Value;
             dirty = true;
             UpdateLabels();
             Apply();
@@ -397,8 +439,11 @@ namespace RetracBoost
         void Apply()
         {
             bool ok;
-            try { ok = GammaRamp.Apply(settings, enabled && gameWindow != IntPtr.Zero ? DeviceOf(gameWindow) : null); }
+            string device = enabled && gameWindow != IntPtr.Zero ? DeviceOf(gameWindow) : null;
+            try { ok = GammaRamp.Apply(settings, device); }
             catch { ok = false; }
+            try { if (Vibrance.Available) Vibrance.Apply(settings.Saturation, device); }
+            catch { }
             status.Text = L.T("Windows hat diese Einstellung nicht übernommen. Etwas schwächer einstellen oder den Nachtmodus von Windows ausschalten.",
                               "Windows did not accept this setting. Try a weaker value or turn off Windows night light.");
             status.Visibility = ok ? Visibility.Collapsed : Visibility.Visible;
@@ -419,10 +464,37 @@ namespace RetracBoost
             brightness.Value = 0;
             contrast.Value = 1;
             warmth.Value = 0;
+            saturation.Value = 0;
             loading = false;
             OnSliderChanged();
             settings.Save();
             dirty = false;
+        }
+
+        void ApplyFilter(ColorFilter f)
+        {
+            loading = true;
+            gamma.Value = f.Gamma;
+            brightness.Value = f.Brightness;
+            contrast.Value = f.Contrast;
+            warmth.Value = f.Warmth;
+            saturation.Value = Vibrance.Available ? f.Saturation : 0;
+            loading = false;
+            OnSliderChanged();
+            settings.Save();
+            dirty = false;
+        }
+
+        /// <summary>Markiert den Filter, der zu den aktuellen Reglern passt.</summary>
+        void MarkFilter()
+        {
+            foreach (var f in Filters)
+            {
+                bool match = Math.Abs(settings.Gamma - f.Gamma) < 0.006 && Math.Abs(settings.Brightness - f.Brightness) < 0.006
+                          && Math.Abs(settings.Contrast - f.Contrast) < 0.006 && Math.Abs(settings.Warmth - f.Warmth) < 0.026
+                          && (!Vibrance.Available || Math.Abs(settings.Saturation - f.Saturation) < 0.026);
+                filterButtons[f.Name].BorderBrush = match ? AccentBrush : DefaultBorderBrush;
+            }
         }
 
         void UpdateLabels()
@@ -436,6 +508,9 @@ namespace RetracBoost
             warmthValue.Text = w == 0 ? "Neutral"
                 : w > 0 ? L.T("Wärmer ", "Warmer ") + w.ToString(c) + " %"
                 : L.T("Kühler ", "Cooler ") + (-w).ToString(c) + " %";
+            int sat = (int)Math.Round(settings.Saturation * 100);
+            saturationValue.Text = Vibrance.Available ? (sat > 0 ? "+" : "") + sat.ToString(c) + " %" : "–";
+            MarkFilter();
         }
 
         static TextBlock SectionTitle(string text)

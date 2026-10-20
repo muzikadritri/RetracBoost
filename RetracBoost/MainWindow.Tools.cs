@@ -115,6 +115,7 @@ namespace RetracBoost
         void InitGameMenu()
         {
             GammaRamp.RecoverAfterCrash();
+            Vibrance.RecoverAfterCrash();
             var src = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
             if (src != null) src.AddHook(GameMenuHook);
 
@@ -234,6 +235,7 @@ namespace RetracBoost
                 gameMenuTweak.Note = null;
                 if (gameMenu != null) { gameMenu.Hide(); gameMenu.Enabled = false; }
                 GammaRamp.Restore();
+                Vibrance.Restore();
             }
             rowGameMenu.Detail = gameMenuTweak.Detail;
         }
@@ -245,6 +247,7 @@ namespace RetracBoost
             if (foregroundHook != IntPtr.Zero) { UnhookWinEvent(foregroundHook); foregroundHook = IntPtr.Zero; }
             if (gameMenu != null) gameMenu.Close();
             GammaRamp.Restore();
+            Vibrance.Restore();
         }
 
         // ------------------------------------------------------------------ Klick auf Ergebniszeile
