@@ -818,7 +818,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock x:Name="FooterHint" Grid.Column="0" Text="Retrac Boost v1.0.9 · 64-Bit Windows"
+                    <TextBlock x:Name="FooterHint" Grid.Column="0" Text="Retrac Boost v1.0.10 · 64-Bit Windows"
                                FontSize="11.5" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
 
                     <Button x:Name="BackBtn" Grid.Column="2" Style="{StaticResource SecondaryButton}"
