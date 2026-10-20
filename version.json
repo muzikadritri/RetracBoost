@@ -1,5 +1,5 @@
 {
-  "version": "1.0.8",
-  "url": "https://github.com/muzikadritri/RetracBoost/releases/download/v1.0.8/RetracBoost.exe",
-  "changelog": "Games-Tab: deutlich mehr Schalter pro Spiel\nNeu: Datenträger-/RAM-Priorität und Netzwerk-Priorität für jedes Spiel\nMehr Grafikwerte für CS2, GTA V, Fortnite, VALORANT, Apex, Rocket League, PUBG und Minecraft"
+  "version": "1.0.9",
+  "url": "https://github.com/muzikadritri/RetracBoost/releases/download/v1.0.9/RetracBoost.exe",
+  "changelog": "Alt+L-Menü: Grafik-Presets Schön, Ausgewogen, Leistung und Original\nGilt für Fortnite, VALORANT und PUBG ab dem nächsten Spielstart\nBildschirm-Regler wirken in allen Spielen aus dem Games-Tab"
 }

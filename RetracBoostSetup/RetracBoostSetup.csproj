@@ -9,7 +9,7 @@
     <AssemblyName>RetracBoost-Setup</AssemblyName>
     <RootNamespace>RetracBoostSetup</RootNamespace>
     <Product>Retrac Boost Custom Setup</Product>
-    <Version>1.0.8</Version>
+    <Version>1.0.9</Version>
     <StartupObject>RetracBoostSetup.Program</StartupObject>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\RetracBoost\app.ico</ApplicationIcon>

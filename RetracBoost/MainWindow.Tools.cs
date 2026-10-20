@@ -110,6 +110,7 @@ namespace RetracBoost
         IntPtr foregroundHook;
         uint lastPid;
         bool lastPidIsGame;
+        GameDef lastMenuGame;
 
         void InitGameMenu()
         {
@@ -140,7 +141,13 @@ namespace RetracBoost
             string name = null;
             try { using (var p = System.Diagnostics.Process.GetProcessById((int)pid)) name = p.ProcessName; }
             catch { }
-            bool isGame = name != null && GameProcessNames().Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+            bool isGame = false;
+            if (name != null)
+            {
+                var def = GameByProcess(name);
+                if (def != null) lastMenuGame = def;
+                isGame = def != null || GameProcessNames().Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+            }
             lastPid = pid;
             lastPidIsGame = isGame;
             return isGame;
@@ -150,6 +157,40 @@ namespace RetracBoost
         {
             yield return Path.GetFileNameWithoutExtension(OgfnExe);
             if (!string.IsNullOrEmpty(game.Exe)) yield return Path.GetFileNameWithoutExtension(game.Exe);
+        }
+
+        /// <summary>Spiel aus dem Games-Tab mit dieser Exe, oder null.</summary>
+        GameDef GameByProcess(string processName)
+        {
+            foreach (var c in gameCards)
+                if (c.Game.Exes.Any(e => string.Equals(Path.GetFileNameWithoutExtension(e), processName, StringComparison.OrdinalIgnoreCase)))
+                    return c.Game;
+            return null;
+        }
+
+        bool presetTickBusy;
+
+        /// <summary>Trägt vorgemerkte Grafik-Presets ein, sobald das Spiel geschlossen ist. Läuft mit dem 2-s-Takt.</summary>
+        void PresetTick()
+        {
+            if (presetTickBusy) return;
+            var games = gameCards.Select(c => c.Game).Where(g => GraphicsPresets.Pending(g) != null).ToList();
+            if (games.Count == 0) return;
+            presetTickBusy = true;
+            Task.Run(() => { try { GraphicsPresets.Tick(games); } catch { } })
+                .ContinueWith(t => Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    presetTickBusy = false;
+                    if (gameMenu != null) gameMenu.RefreshPresets();
+                })));
+        }
+
+        /// <summary>Spiel für die Grafik-Presets: das zuletzt vorne gesehene, sonst Fortnite.</summary>
+        GameDef PresetGame()
+        {
+            if (lastMenuGame != null) return lastMenuGame;
+            var fn = gameCards.FirstOrDefault(c => c.Game.Id == "fortnite");
+            return fn != null ? fn.Game : null;
         }
 
         IntPtr GameMenuHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -168,7 +209,7 @@ namespace RetracBoost
                 gameMenu = new GameMenuWindow((Style)FindResource("Switch"), () => rowOverlay.IsOn, on =>
                 {
                     if (rowOverlay.IsOn != on && rowOverlay.CanToggle) rowOverlay.IsOn = on;
-                });
+                }, PresetGame);
             return gameMenu;
         }
 
